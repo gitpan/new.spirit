@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.46 2001/03/23 14:34:56 joern Exp $
+# $Id: Object.pm,v 1.49 2001/07/24 15:35:26 joern Exp $
 
 package NewSpirit::Object;
 
@@ -71,6 +71,7 @@ package NewSpirit::Object;
 #				object)
 # check_properties		checks if user edited properties are ok
 # get_object_src_file		returns the source file to a given object name
+# download_filename		Filename for download
 #
 # Stub methods, to be overloaded:
 # -------------------------------
@@ -184,7 +185,7 @@ sub new {
 	my $ext = $1;
 	my $object_type = $NewSpirit::Object::extensions->{lc($ext)};
 
-	$object_type ||= 'default';
+	$object_type ||= 'generic';
 
 	my $object_type_config =
 		$NewSpirit::Object::object_types->{$object_type};
@@ -373,7 +374,7 @@ sub get_object_type {
 
 	my $object_type = $NewSpirit::Object::extensions->{$ext};
 
-	$object_type ||= 'default';
+	$object_type ||= 'generic';
 
 #	print STDERR "object_file=$object_file object_type=$object_type\n";
 
@@ -639,8 +640,10 @@ sub editor_header {
 	my $function_popup = $self->editor_function_popup;
 	
 	my $object_url = $self->{object_url};
-	$object_url =~ s!\?!/$self->{object_basename}?!;
-
+	my $download_filename = $self->download_filename;
+	$object_url =~ s!\?!/$download_filename?!;
+	$object_url .= "&__download_filename=foo/$download_filename";
+	
 	my $enctype = ($self->{event} eq 'edit' and
 	              $self->{object_type_config}->{file_upload}) ?
 		"multipart/form-data" : "application/x-www-form-urlencoded";
@@ -663,6 +666,31 @@ __HTML
 
 	my $save_window_name = "cipp_save_window$ticket";
 	my $dep_window_name  = "cipp_dep_window$ticket";
+	my $cgi_window_name  = "cipp_cgi_window$ticket";
+
+	my $cgi_url;
+	if ( $self->{object_type} eq 'cipp' and $self->{event} !~ /restore|view/ ) {
+		my $base_config_object = new NewSpirit::Object (
+			q => $self->{q},
+			object => $CFG::default_base_conf 
+		);
+		my $base_config_data = $base_config_object->get_data;
+		$base_config_object = undef;
+
+		my $install_file = $self->get_install_filename;
+		my $cgi_dir = $self->{project_cgi_dir};
+		$install_file =~ s!^$cgi_dir/!!;
+		if ( $base_config_data->{base_server_name} ) {
+		  $base_config_data->{base_server_name} =~ s!http://!!;
+		  $base_config_data->{base_server_name} =~ s!/$!!;
+		  $cgi_url =
+			"http://$base_config_data->{base_server_name}".
+			$base_config_data->{base_cgi_url}."/".
+			$self->{project}."/".
+			$install_file;
+		}
+	}
+
 
 	# the history is displayed in the main frame, all other
 	# events target a window
@@ -676,6 +704,32 @@ __HTML
     }
     document.cipp_object.e.value=
     	document.cipp_object.func[document.cipp_object.func.selectedIndex].value;
+
+    if ( document.cipp_object.e.value == 'execute_cgi_program' ) {
+        if ( '$cgi_url' == '' ) {
+	  alert ('You first have to configure a server name in $self->{project}.configuration.');
+	  return;
+	}
+        var url = '$cgi_url';
+	if ( document.cipp_object.modification_tag.value != '' ) {
+	  url += '?' + document.cipp_object.modification_tag.value;
+	}
+	if ( !top.$cgi_window_name || top.$cgi_window_name.closed ) {
+          var exec_win = open_window (
+            url, '$cgi_window_name',
+            $CFG::TEST_WIN_WIDTH, $CFG::TEST_WIN_HEIGHT,
+            $CFG::TEST_WIN_POSX, $CFG::TEST_WIN_POSY,
+            true, true
+          );
+	  top.$cgi_window_name = exec_win;
+	} else {
+	  top.$cgi_window_name.document.location.href = url;
+	  top.$cgi_window_name.focus();
+	}
+	
+        return;
+    }
+
     document.cipp_object.target  = '$save_window_name';
 
     if ( !top.$save_window_name || top.$save_window_name.closed ) {
@@ -857,6 +911,24 @@ $close_window_table
   }
 </script>
 __HTML
+}
+
+#---------------------------------------------------------------------
+# download_filename - Name for file download
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->download_filename 
+#
+# DESCRIPTION:
+#	This method returns the name for downloading the file. By
+#	default this is the basename of the object file. But this
+# 	may be overidden by object type classes.
+#---------------------------------------------------------------------
+
+sub download_filename {
+	my $self = shift;
+	
+	return $self->{object_basename};
 }
 
 #---------------------------------------------------------------------
@@ -1046,7 +1118,15 @@ sub editor_function_popup {
 	$html .= qq{<OPTION VALUE="$save_event">$save_text</OPTION>};
 	$add_no_dep_entry and
 		$html .= qq{<OPTION VALUE="${save_event}_without_dep">$save_text w/o Dep.</OPTION>};
-	$html .= qq{<OPTION VALUE="install_last_saved_object">Install (edited external)</OPTION>};
+	
+	if ( $self->{event} ne "view" ) {
+		$html .= qq{<OPTION VALUE="install_last_saved_object">Install (edited external)</OPTION>};
+	}
+
+	if ( $self->{object_type} eq 'cipp' and $self->{event} ne "view" ) {
+		$html .= qq{<OPTION VALUE="execute_cgi_program">Execute CGI</OPTION>};
+	}
+	
 	$html .= qq{</SELECT>};
 	$html .= qq{<b><INPUT TYPE=BUTTON VALUE=" Submit " }.
 		 qq{onClick="$onclick"></b>};
@@ -1297,6 +1377,14 @@ sub get_meta_data {
 		$self->{_meta_data} = {
 			description => 'unknown',
 		};
+
+		# set defaults from object type configuration
+		my $properties = $self->{object_type_config}->{properties};
+		foreach my $prop ( keys %{$properties} ) {
+			$self->{_meta_data}->{$prop} = $properties->{$prop}->{default}
+				if defined $properties->{$prop}->{default};
+		}
+		
 	} else {
 		my $df = new NewSpirit::DataFile ($meta_filename);
 		$self->{_meta_data} = $df->read;
@@ -2680,6 +2768,8 @@ sub install_file {
 	my $from_file = $self->{object_file};
 	my $to_file = $self->get_install_filename;
 	
+	return 1 if not $to_file;
+
 	copy ($from_file, $to_file)
 		or push @{$self->{install_errors}},
 		   "Can't copy '$from_file' to '$to_file': $!";
@@ -2711,6 +2801,8 @@ sub print_install_errors {
 
 	my ($errors) = @_;
 	$errors ||= $self->{install_errors};
+
+use Data::Dumper; print "<pre>",Dumper($errors),"</pre>";
 
 	print <<__HTML;
 $CFG::FONT<FONT COLOR="red">
@@ -3085,6 +3177,8 @@ sub print_dependencies {
 					->{$object{$o}}
 					->{name};
 
+#		print STDERR "$object{$o}=$type_text\n";
+
 		# first print the indent string
 		print $indent;
 		
@@ -3351,6 +3445,17 @@ sub create_ctrl {
 	NewSpirit::end_page();
 }
 
+#---------------------------------------------------------------------
+# create - create new object from scratch or from a template
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->create
+#
+# DESCRIPTION:
+#	This method creates the object files for a new object using
+#	templates if existing.
+#---------------------------------------------------------------------
+
 sub create {
 	my $self = shift;
 	
@@ -3374,7 +3479,7 @@ sub create {
 	open ($fh, "> $self->{object_file}")
 		or return "Can't create file '$self->{object_file}'";
 	close $fh;
-	
+
 	return;
 }
 

@@ -11,6 +11,13 @@
 # OPTIONAL
 #       $par2                   description
 #
+# AUTHOR
+#       $author
+#
+# COPYRIGHT
+#       Copyright (c) 2001, dimedis GmbH, Cologne, Germany,
+#	All Rights Reserved
+# 
 #-----------------------------------------------------------------------------
 
 <?INTERFACE INPUT="" OPTIONAL="">

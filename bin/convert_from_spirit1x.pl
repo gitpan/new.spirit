@@ -1,4 +1,4 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 
 use strict;
 use SDBM_File;

@@ -1,6 +1,6 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 
-# $Id: install.pl,v 1.6 2001/03/14 11:06:23 joern Exp $
+# $Id: install.pl,v 1.10 2001/07/24 15:35:26 joern Exp $
 
 require 5.004_04;
 
@@ -10,6 +10,7 @@ use lib "lib";
 use Cwd;
 use Term::Cap;
 use Config;
+use NewSpirit;
 
 BEGIN {
 	$NewSpirit::install_pl = 1;
@@ -99,7 +100,9 @@ sub hello {
 | Copyright (c) 1997-$year dimedis GmbH, All Rights Reserved            |
 +----------------------------------------------------------------------+
 | new.spirit is free Perl software; you can redistribute it and/or     |
-| modify it under the same terms as Perl itself.                       |
+| modify it under the same terms as Perl itself. By installing this    |
+| software you accept one of the licenses located in the "license"     |
+| directory of this distribution (Artistic or Gnu Public License).     |
 +----------------------------------------------------------------------+
 
 __EOF
@@ -241,6 +244,29 @@ sub check_modules {
 		print "  ", join (" ", @missing);
 		print "\n\n";
 		exit 1;
+	}
+	
+	# warn if installed CIPP version is older than shipped version
+	my @files = sort @{NewSpirit::filename_glob (
+		dir => "$CFG::perlmodules_dir",
+		regex => "CIPP.*"
+	)};
+	
+	my $last = @files[@files-1];
+	$last =~ /CIPP-(\d+\.\d+(_\d+)?)/;
+	my $last_version = $1;
+	
+	if ( $last_version > $CIPP::VERSION ) {
+		print "\n";
+		my $answer = ask (
+			text => "Warning! Installed CIPP version $CIPP::VERSION is older than\n".
+			        "shipped version $last_version. You should install the package\n\n".
+				"$last first.\n\n".
+				"Type 'ignore' to ignore this warning an proceed",
+			default => 'exit',
+		);
+		
+		exit 1 if $answer ne 'ignore';
 	}
 }
 

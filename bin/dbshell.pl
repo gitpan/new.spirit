@@ -1,6 +1,6 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 
-# $Id: dbshell.pl,v 1.13 2001/02/08 16:12:30 joern Exp $
+# $Id: dbshell.pl,v 1.16 2001/07/24 15:35:26 joern Exp $
 
 use strict;
 use Getopt::Std;
@@ -33,13 +33,13 @@ BEGIN {
 	}
 }
 
-my $VERSION = "0.06";
+my $VERSION = "0.07";
 my $USAGE;
 
 if ( $STATIC ) {
 	$USAGE =<<__EOF;
 
-dbshell.pl - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
+dbshell.pl Version $VERSION - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
 
 usage: dbshell.pl [-s] [-e] [-u username] [-p password] DBI-Data-Source
        dbshell.pl [-s] [-e] new.spirit-db-config-file
@@ -61,7 +61,7 @@ __EOF
 } else {
 	$USAGE =<<__EOF;
 
-dbshell.pl - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
+dbshell.pl Version $VERSION - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
 
 usage: dbshell.pl [-s] [-u username] [-p password] DBI-Data-Source
        dbshell.pl [-s] [-e] new.spirit-Database-Object
@@ -349,20 +349,26 @@ sub db_shell {
 	my $get_line_cb;
 	
 	my $shell;
-	my $term_stub_only;
 	my $initialize_history;
 	my $term;
 	
+	my $rl_package;
 	if ( -t STDIN ) {
 		# we're connected to a TTY, so install
 		# a Term::Readline input handler
 		require "Term/ReadLine.pm";
 		$term = new Term::ReadLine 'dbshell';
 		
-		if ( $term->ReadLine eq 'Term::ReadLine::Stub' ) {
-			$term_stub_only = 1;
+		$rl_package = $term->ReadLine;
+		if ( $rl_package eq 'Term::ReadLine::Perl' ) {
+			$readline::rl_completion_function = 'main::perl_rl_completion';
+		} elsif ( $rl_package eq 'Term::ReadLine::Gnu' ) {
+			my $attribs = $term->Attribs;
+			$attribs->{'attempted_completion_function'} = undef;
+			$attribs->{'completion_entry_function'} = undef;
+			$attribs->{'list_completion_function'} = undef;
 		}
-		
+
 		$get_line_cb = sub {
 			print "\n" if $shell->{command_completed};
 			$shell->{command_completed} = 0;
@@ -378,7 +384,6 @@ sub db_shell {
 		
 		$initialize_history = 1;
 		
-		
 	} else {
 		# no TTY, so simply read from STDIN without
 		# giving a prompt
@@ -388,7 +393,6 @@ sub db_shell {
 			return $line;
 		}
 	}
-
 	
 	$shell = new NewSpirit::SqlShell::Text (
 		source      => $source,
@@ -408,10 +412,13 @@ sub db_shell {
 		) 
 	}
 
-	$shell->info ("Only stub ReadLine support available.",
-	              "Install Term::ReadLine::Gnu or Term::ReadLine::Perl",
-		      "to get enhanced ReadLine support!")
-		if $term_stub_only;
+	if ( $rl_package eq 'Term::ReadLine::Stub' ) {
+		$shell->info ("WARNING: Only stub ReadLine support available.",
+	        	      "Install Term::ReadLine::Gnu or Term::ReadLine::Perl",
+			      "to get enhanced ReadLine support!")
+	} elsif ( $rl_package ) {
+		$shell->info ("ReadLine support activated using module '$rl_package'");
+	}
 
 	$shell->loop;
 
@@ -421,6 +428,11 @@ sub db_shell {
 	                         $print_error_summary;
 
 	exit $shell->has_errors;
+}
+
+sub perl_rl_completion {
+	my ($input) = @_;
+	return $input." ";
 }
 
 sub ask {

@@ -1,4 +1,4 @@
-# $Id: DB.pm,v 1.11 2001/02/19 15:24:35 joern Exp $
+# $Id: DB.pm,v 1.13 2001/04/03 14:53:39 joern Exp $
 
 package NewSpirit::CIPP::DB;
 
@@ -161,7 +161,11 @@ sub install_file {
 	my $install_file = $self->get_install_filename;
 	return 1 if not $install_file;
 
-	$self->real_install_file ($install_file, $self->{object_name});
+	$self->real_install_file (
+		$install_file,
+		$self->get_install_object_name,
+#		$self->{object_name},
+	);
 
 	# now check if we are default database, so
 	# we will also write a configuration named 'default'
@@ -255,7 +259,7 @@ sub delete {
 	my $self = shift;
 	
 	# first delete the object via the super class mechanism
-	$self->SUPER::create;
+	$self->SUPER::delete;
 	
 	# no remove the entry from the global databases file
 	my $file = $self->{project_databases_file};

@@ -92,6 +92,8 @@ lib/NewSpirit/Object/Text.pm
 lib/NewSpirit/Object/Record.pm
 lib/NewSpirit/Object/Image.pm
 lib/NewSpirit/Object/Install.pm
+lib/NewSpirit/Object/Blob.pm
+lib/NewSpirit/Object/Generic.pm
 lib/NewSpirit/Param1x.pm
 lib/NewSpirit/Depend.pm
 lib/NewSpirit/PerlCheck.pm
@@ -125,4 +127,7 @@ lib/NewSpirit/SqlShell/Text.pm
 cpan
 cpan/CIPP.pm
 perlmodules
-perlmodules/CIPP-2.30.tar.gz
+perlmodules/CIPP-2.37.tar.gz
+license
+license/Artistic.txt
+license/GPL.txt

@@ -1,4 +1,4 @@
-# $Id: Base.pm,v 1.20 2001/03/23 14:34:56 joern Exp $
+# $Id: Base.pm,v 1.22 2001/05/15 10:26:42 joern Exp $
 
 package NewSpirit::CIPP::Base;
 
@@ -19,6 +19,10 @@ my %FIELD_DEFINITION = (
 		type => 'text',
 		check => "this.form.base_cgi_url.value.substring(0,1)=='/'",
 		alert => "Mappings must be a absolute URL",
+	},
+	base_server_name => {
+		description => 'Server Domain Name[:Port]<br>(for local testing only)',
+		type => 'text',
 	},
 	base_error_show => {
 		description => 'Show Perl / CIPP Error Messages',
@@ -66,7 +70,7 @@ my %FIELD_DEFINITION = (
 );
 
 my @FIELD_ORDER_DEFAULT_CONFIG = (
-	'base_doc_url', 'base_cgi_url', 'base_error_show',
+	'base_doc_url', 'base_cgi_url', 'base_server_name', 'base_error_show',
 	'base_error_text', 'base_http_header', 'base_perl_lib_dir',
 	'base_default_db', 'base_history_size',
 );
@@ -226,6 +230,7 @@ package CIPP_Exec;
 \$cipp_cgi_url     = '$base_cgi_url';
 \$cipp_doc_url     = '$base_doc_url';
 \$cipp_cgi_dir     = '$prod_dir/cgi-bin';
+\$cipp_lib_dir     = '$prod_dir/lib';
 \$cipp_doc_dir     = '$prod_dir/htdocs';
 \$cipp_config_dir  = '$prod_dir/config';
 \$cipp_sql_dir     = '$prod_dir/sql';
@@ -245,6 +250,7 @@ package CIPP_Exec;
 \$cipp_cgi_url     = '$base_cgi_url';
 \$cipp_doc_url     = '$base_doc_url';
 \$cipp_cgi_dir     = '$self->{project_cgi_base_dir}';
+\$cipp_lib_dir     = '$self->{project_lib_dir}';
 \$cipp_doc_dir     = '$self->{project_htdocs_base_dir}';
 \$cipp_config_dir  = '$self->{project_config_dir}';
 \$cipp_sql_dir     = '$self->{project_sql_dir}';

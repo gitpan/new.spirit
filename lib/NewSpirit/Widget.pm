@@ -241,7 +241,8 @@ sub input_widget {
 		} elsif ( ref $type eq 'HASH' ) {
 			$self->complex_selection (
 				name => $name,
-				type_href => $type
+				type_href => $type,
+				data => $data,
 			);
 			$type = undef;
 
@@ -326,22 +327,29 @@ sub complex_selection {
 	
 	my $name  = $par{name};
 	my $type  = $par{type_href};
+	my $data  = $par{data};
 	
-	if ( $type->{type} eq 'list' ) {
+	if ( $type->{type} eq 'list' or $type->{type} eq 'popup' ) {
 		my $multiple = $type->{multiple} ? "MULTIPLE " : "";
-		print qq{<select name="$name" size=6 width=254 $multiple};
+		my $size = $type->{type} eq 'list' ? "size=6" : "";
+		print qq{<select name="$name" $size width=254 $multiple};
 		print qq{onChange="if (document.object_was_modified) object_was_modified()">\n};
 		foreach my $item (@{$type->{items}}) {
 			my $value = $item->[0];
-			my $selected = $type->{selected}->{$value} ?
+			my $selected;
+			if ( $type->{type} eq 'list' ) {
+				$selected = $type->{selected}->{$value} ?
 					"SELECTED" : "";
+			} else {
+				$selected = $data->{$name} eq $value ? "SELECTED" : "";
+			}
 			$value =~ s/"/&quot;/g;
 			print qq{<option value="$value" $selected>},
 			      qq{$item->[1]</option>\n};
 		}
 		print qq{</select>\n};
 	} else {
-		print "type $type currently not supported\n";
+		print "type '$type->{type}' currently not supported\n";
 	}
 }
 

@@ -1,6 +1,6 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 
-# $Id: mktardist.pl,v 1.6 2001/02/09 11:00:38 joern Exp $
+# $Id: mktardist.pl,v 1.9 2001/07/24 15:35:26 joern Exp $
 
 use strict;
 use File::Find;

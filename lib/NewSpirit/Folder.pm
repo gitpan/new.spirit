@@ -1,4 +1,4 @@
-# $Id: Folder.pm,v 1.8 2001/02/19 15:24:35 joern Exp $
+# $Id: Folder.pm,v 1.9 2001/07/24 15:35:26 joern Exp $
 
 package NewSpirit::Folder;
 
@@ -367,7 +367,7 @@ __HTML
 			       $object_types->{$b}->{name} }
 	                keys %{$object_types} ) {
 		# default and depend-all typed objects cannot be created here
-		next if $type eq 'default' or $type eq 'depend-all';
+		next if $type eq 'depend-all';
 		$cipp_idx = $i if $type eq 'cipp';
 		my $selected = $type eq 'cipp' ? 'selected' : '';
 		my $ext_list = join (",", sort @{$type2ext{$type}});

@@ -1,4 +1,4 @@
-# $Id: Project.pm,v 1.17 2001/03/23 14:34:56 joern Exp $
+# $Id: Project.pm,v 1.18 2001/05/15 10:26:42 joern Exp $
 
 package NewSpirit::Project;
 
@@ -525,6 +525,15 @@ __HTML
 		mkdir "$data{root_dir}/src", 0775;
 	} else {
 		chmod 0775, "$data{root_dir}/src";
+	}
+
+	# create project prod and logs dir, no error checking necessary
+	if ( not -d "$data{root_dir}/prod" ) {
+		mkdir "$data{root_dir}/prod", 0775;
+		mkdir "$data{root_dir}/prod/logs", 0775;
+	} else {
+		chmod 0775, "$data{root_dir}/src";
+		chmod 0775, "$data{root_dir}/prod/logs";
 	}
 
 	# Create project configuration

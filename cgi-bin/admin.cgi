@@ -1,6 +1,6 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 
-# $Id: admin.cgi,v 1.25 2001/03/23 14:34:56 joern Exp $
+# $Id: admin.cgi,v 1.28 2001/07/24 15:35:26 joern Exp $
 
 use strict;
 BEGIN {

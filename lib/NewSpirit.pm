@@ -196,7 +196,7 @@ sub js_open_window {
 
 	print <<__HTML;
 <SCRIPT LANGUAGE="JavaScript">
-  function open_window (url, name, sizex, sizey, posx, posy, return_obj) {
+  function open_window (url, name, sizex, sizey, posx, posy, return_obj, with_status_bar) {
     if ( name == null ) {
       var r = Math.floor(Math.random()*100000);
       name = 'WIN$ticket'+r;
@@ -212,12 +212,23 @@ sub js_open_window {
       geometry = geometry + ',screenX='+posx + ',screenY='+posy;
     }
 
+    var window_options;
+    if ( ! with_status_bar ) {
+        window_options =
+        'toolbar=no,location=no,directories=no,status=no,menubar=no,'+
+        'resizable=yes,scrollbars=yes';
+    } else {
+        window_options =
+        'toolbar=yes,location=yes,directories=yes,status=yes,menubar=yes,'+
+        'resizable=yes,scrollbars=yes';
+    }
+    window_options += geometry;
+
     // we open the window without URL, maybe it exists already
     var w = window.open (
         url,
         name,
-        'toolbar=no,location=no,directories=no,status=no,menubar=no,'+
-        'resizable=yes,scrollbars=yes'+geometry
+	window_options
     );
 
     w.focus();

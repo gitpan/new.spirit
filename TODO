@@ -1,16 +1,65 @@
-$Id: TODO,v 1.24 2001/03/23 14:34:56 joern Exp $
+$Id: TODO,v 1.25 2001/05/14 12:48:16 joern Exp $
+
+
+
+
+DEPRECATED: use http://bugzilla.dimedis.de/ :)
+
+
+
+
+
+
+--- Bugzilla ---
+
+- use strict Problem?
+  <?GETPARAM NAME="print"> funktioniert ohne Probleme.
+
+- CIPP
+  - <?GETDBHANDLE>: keine "-" Zeichen in Datenbanknamen? 
+
+- Dimedis::Sql:
+  - get liefert kein undef bei leerer Menge zurück? (im href fall)
+
+- CIPP Doku
+  - <?GETDBHANDLE> nicht im Treeview des PDF Dokuments
+
+- CIPP
+  <?INTERFACE OPTIONAL="$ticket, $fair, $lang">
+  !=
+  <?INTERFACE OPTIONAL="$ticket, $fair, $lang
+  ">
 
 - CIPP Doku
   - <?SQL RESULT> 0E0 dokumentieren
 
-- BUG:
-  <?GETURL> cipp-css funzt nich
+- CIPP
+  - geschachtelte <?SQL> Befehle möglich?
+  - <?IMG WIDTH HEIGHT> bestimmen
+
+- <?REQUIRE>
+  - Compile-Zeit Check auf Modulexistenz?
+
+- CIPP Bug:
+  - <?SQL VAR=" $bla, $foo"> produziert fehlerhaften Code (wg. Leerzeichen)
+
+- CIPP:
+  <?GETURL> um PATH_INFO erweitern (für Download Dateinamen)
+
+- Wenn ich ein sql-Skript-Objekt in der Shell per nedit anlege und dies in
+  newspirit2 zum ersten mal Speicher, sollte (IMHO) als DB automatisch die
+  default-DB eingetragen werden, genauso wie es gemacht wird, wenn man das
+  Objekt ueber newspirit2 anlegt.
+
+- Project Install: Warnen, wenn Konfigurationsobjekt keine Default
+  DB definiert
+
+- Ausführen CGI Programme. Parameterübergabe über mod-textfeld,
+  Funktion in Save-Popup
 
 - Diverses
   - CR/LF Conversion bei Prod Install
-  - DB Replace prüfen
   - SQL Objekte: Shebang Line zu dbshell.pl?
-  - <?IMG WIDTH HEIGHT> bestimmen
   - DB src Objekte bei "Project Install" read only machen
   - "open with treeview" nicht abwählen
   - open in window auch auf Ordnern
@@ -23,15 +72,6 @@ $Id: TODO,v 1.24 2001/03/23 14:34:56 joern Exp $
 
 - dbshell.pl
   - interaktive Frage: "soll ich weitermachen?"
-
-- <?REQUIRE>
-  - Compile-Zeit Check auf Modulexistenz?
-
-- CIPP Bug:
-  - <?SQL VAR=" $bla, $foo"> produziert fehlerhaften Code (wg. Leerzeichen)
-
-- CIPP:
-  <?GETURL> um PATH_INFO erweitern (für Download Dateinamen)
 
 - Projekt Übersetzen
   - Includes nicht unabhängig von CGI's übersetzen. Abhängigkeitsproblem
@@ -57,16 +97,10 @@ $Id: TODO,v 1.24 2001/03/23 14:34:56 joern Exp $
   - Objektnamen in Ausgabe mit Editor verlinken
   - Übersetzungsdauer ausgeben
 
-- CIPP
-  - objektabhängig HTTP Header definieren
-
 - x.configuration besser nicht löschbar
 
 - BUG: dbshell.pl
   - Passworteingabe unter Windows NT funktioniert nicht
-
-- Save Fenster
-  - URL des Objektes zum Testen ausgeben
 
 - Fehlerausgabe (Übersetzen)
   - show Perl Source mit Zeilennummern
@@ -92,3 +126,4 @@ $Id: TODO,v 1.24 2001/03/23 14:34:56 joern Exp $
 - CIPP
   - filesystem caching of preprocessed Includes 
   - last SQL; dokumentieren -> CIPP Befehl dafür kreiren
+

@@ -8,7 +8,7 @@ This is the Windows formatted version of the file 'README'.
 | modify it under the same terms as Perl itself.                       |
 +----------------------------------------------------------------------+
 
-$Id: README,v 1.5 2001/03/07 17:48:30 joern Exp $
+$Id: README,v 1.6 2001/03/26 13:15:52 joern Exp $
 
 new.spirit is a Perl based software development environment for creating
 powerful dynamic databased web applications. It runs on any Perl enabled
@@ -34,7 +34,7 @@ PREREQUISITS:
     They may be outdated but are tested in our development environment.
     They are located in the perlmodules directory of this distribution.
 
-  - A webserver with CGI support. Apache ist recommended.
+  - A webserver with CGI support. Apache is recommended.
 
 
 UNIX INSTALLATION INSTRUCTIONS:

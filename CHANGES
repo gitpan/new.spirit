@@ -1,4 +1,62 @@
-$Id: CHANGES,v 1.23 2001/03/23 15:35:45 joern Exp $
+$Id: CHANGES,v 1.29 2001/07/24 15:35:26 joern Exp $
+
+2.0.5 2001/07/24 joern
+	Bugfix:
+	- Bugzilla Bug #639
+	  dbshell.pl: Tabulator key produces spaces instead of weird
+	  command completion (if Term::ReadLine::Perl is used. With
+	  Term::ReadLine::Gnu currently Tab keys will be ignored)
+	- Bugzilla Bug #835:
+	  History viewing did not work on CIPP CGI objects, when the
+	  version number exceeded the maximum version number of the
+	- "Test CGI" renamed to "Execute CGI"
+	- fixed a typo in an "Execute CGI" error message popup window.
+	  base configuration object.
+	  
+	Features:
+	- Bugzilla Enhancement #684:
+	  new "Java File" object type for files with the extensions:
+	  jar, cap, class and properties. These files are handled
+	  through a new internal generic Blob handler. It is easy
+	  to add new blob file types with this handler.
+
+	- but this generic blob handler is unable to handle
+	  files with unknown extensions. For those files a new
+	  object type for generic / unknown file types has been added
+	  You can upload such files and decide to install them into
+	  htdocs, cgi-bin or not to install. CIPP is able to get the URL
+	  of such an object.
+	
+2.0.4_01 2001/05/14 joern
+	INTERNAL BETA RELEASE
+	Bugfix:
+	- Bugzilla Bug #132:
+	  CIPP 2.36_01, which fixes some mod_perl issues, is shipped
+	  with this release
+	- Bugzilla Bug #316:
+	  prod/logs is now created for a new project
+
+	Features:
+	- Bugzilla Bug #99:
+	  Direct execution of CGI programs is now possible. A new entry
+	  in the editor window popup appears: "Test CGI". A new window
+	  is opened with the URL of the current CIPP CGI program (window
+	  position and size can be configured). You can pass parameters
+	  through the generic text input field, formatted the standard
+	  URL encoded way: 'a=1&b=2'. Thanks go to kurt@dimedis.de for his
+	  suggestion.
+	- install.pl warns now if the installed CIPP version is older
+	  than the shipped version
+	- added Artistic and Gnu Public Licenses to the distribution
+
+2.0.3 2001/04/03 joern
+	Bugfix:
+	- deletion of DB Configuration objects did not work
+
+2.0.2 2001/03/26 joern
+	Bugfixes:
+	- Project Installation: database config replacing did not
+	  work properly
 
 2.0.1 2001/03/23 joern
 	Bugfixes:

@@ -1,4 +1,4 @@
-#!/usr/local/perl/5.004_04/bin/perl
+#!/usr/dim/perl/bin/perl
 #!/usr/local/perl/5.6.0/bin/perl
 #!/usr/local/perl/5.005_03/bin/perl
 
