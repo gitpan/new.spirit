@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.49 2001/07/24 15:35:26 joern Exp $
+# $Id: Object.pm,v 1.50 2001/08/07 10:19:35 joern Exp $
 
 package NewSpirit::Object;
 
@@ -668,8 +668,9 @@ __HTML
 	my $dep_window_name  = "cipp_dep_window$ticket";
 	my $cgi_window_name  = "cipp_cgi_window$ticket";
 
-	my $cgi_url;
-	if ( $self->{object_type} eq 'cipp' and $self->{event} !~ /restore|view/ ) {
+	my $exec_url;
+	if ( ($self->{object_type} eq 'cipp' or $self->{object_type} eq 'cipp-html')
+	     and $self->{event} !~ /restore|view/ ) {
 		my $base_config_object = new NewSpirit::Object (
 			q => $self->{q},
 			object => $CFG::default_base_conf 
@@ -678,14 +679,23 @@ __HTML
 		$base_config_object = undef;
 
 		my $install_file = $self->get_install_filename;
-		my $cgi_dir = $self->{project_cgi_dir};
-		$install_file =~ s!^$cgi_dir/!!;
+
+		my $base_dir = $self->{object_type} eq 'cipp' ?
+			$self->{project_cgi_dir} :
+			$self->{project_htdocs_dir};
+
+		$install_file =~ s!^$base_dir/!!;
+
 		if ( $base_config_data->{base_server_name} ) {
 		  $base_config_data->{base_server_name} =~ s!http://!!;
 		  $base_config_data->{base_server_name} =~ s!/$!!;
-		  $cgi_url =
+
+		  $exec_url =
 			"http://$base_config_data->{base_server_name}".
-			$base_config_data->{base_cgi_url}."/".
+			($self->{object_type} eq 'cipp' ?
+				$base_config_data->{base_cgi_url} :
+				$base_config_data->{base_doc_url}).
+			"/".
 			$self->{project}."/".
 			$install_file;
 		}
@@ -706,11 +716,11 @@ __HTML
     	document.cipp_object.func[document.cipp_object.func.selectedIndex].value;
 
     if ( document.cipp_object.e.value == 'execute_cgi_program' ) {
-        if ( '$cgi_url' == '' ) {
+        if ( '$exec_url' == '' ) {
 	  alert ('You first have to configure a server name in $self->{project}.configuration.');
 	  return;
 	}
-        var url = '$cgi_url';
+        var url = '$exec_url';
 	if ( document.cipp_object.modification_tag.value != '' ) {
 	  url += '?' + document.cipp_object.modification_tag.value;
 	}
@@ -1123,8 +1133,9 @@ sub editor_function_popup {
 		$html .= qq{<OPTION VALUE="install_last_saved_object">Install (edited external)</OPTION>};
 	}
 
-	if ( $self->{object_type} eq 'cipp' and $self->{event} ne "view" ) {
-		$html .= qq{<OPTION VALUE="execute_cgi_program">Execute CGI</OPTION>};
+	if ( ($self->{object_type} eq 'cipp' or $self->{object_type} eq 'cipp-html')
+	     and $self->{event} ne "view" ) {
+		$html .= qq{<OPTION VALUE="execute_cgi_program">Execute Object</OPTION>};
 	}
 	
 	$html .= qq{</SELECT>};

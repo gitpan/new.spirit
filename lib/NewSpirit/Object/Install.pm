@@ -1,4 +1,4 @@
-# $Id: Install.pm,v 1.17 2001/03/16 15:46:36 joern Exp $
+# $Id: Install.pm,v 1.18 2001/08/13 15:43:36 joern Exp $
 
 package NewSpirit::Object::Install;
 
@@ -359,33 +359,7 @@ sub install_project_ctrl {
 		);
 	}
 
-
-	# now install objects which depend on the base configuration
-	print "<p><b>Install objects which depend on the base configuration</b><p>\n";
-
-	# Lets get an default_base_conf object in the scope of our
-	# user chosen $base_config. So dependency installation will
-	# result in installing the prod files inside our use chosen
-	# install-dir.
-	my $mangled_default_base_conf = new NewSpirit::Object (
-		q => $q,
-		object => $CFG::default_base_conf,
-		base_config_object => $base_config
-		# this modifies the project_prod_dir to the install-dir
-		# defined by the $base_config object, so installation
-		# of objects will store files inside this alternate
-		# prod dir
-		#
-		# NOTE: only the project_prod_dir is modified, not the
-		# project_src_dir, because otherwise the original src
-		# files cannot be found.
-	);
-
-	print "$CFG::FONT_FIXED<BLOCKQUOTE>\n";
-	$mangled_default_base_conf->install_dependant_objects;
-	print "</BLOCKQUOTE></FONT>\n";
-
-	# and replace objects
+	# replace objects
 	print "<p><b>Replace objects in production tree, where configured...</b><p>\n";
 
 	print "<script>self.window.scroll(0,5000000)</script>\n";
@@ -437,6 +411,31 @@ sub install_project_ctrl {
 			print "<script>self.window.scroll(0,5000000)</script>\n";
 		}
 	}
+	print "</BLOCKQUOTE></FONT>\n";
+
+	# now install objects which depend on the base configuration
+	print "<p><b>Install objects which depend on the base configuration</b><p>\n";
+
+	# Lets get an default_base_conf object in the scope of our
+	# user chosen $base_config. So dependency installation will
+	# result in installing the prod files inside our use chosen
+	# install-dir.
+	my $mangled_default_base_conf = new NewSpirit::Object (
+		q => $q,
+		object => $CFG::default_base_conf,
+		base_config_object => $base_config
+		# this modifies the project_prod_dir to the install-dir
+		# defined by the $base_config object, so installation
+		# of objects will store files inside this alternate
+		# prod dir
+		#
+		# NOTE: only the project_prod_dir is modified, not the
+		# project_src_dir, because otherwise the original src
+		# files cannot be found.
+	);
+
+	print "$CFG::FONT_FIXED<BLOCKQUOTE>\n";
+	$mangled_default_base_conf->install_dependant_objects;
 	print "</BLOCKQUOTE></FONT>\n";
 
 	# build static dbshell.pl
