@@ -1,4 +1,4 @@
-# $Id: DataFile.pm,v 1.2 2001/03/23 14:34:56 joern Exp $
+# $Id: DataFile.pm,v 1.3 2001/03/23 15:35:45 joern Exp $
 
 package NewSpirit::DataFile;
 
@@ -29,25 +29,19 @@ sub write {
 	my $self = shift;
 	my ($href) = @_;
 	
-	my $data = Dumper ($href);
+	my $data;
 	if ( ref $href eq 'HASH' ) {
-		# sort keys, otherwise output is not deterministic
-		# which causes conflicts with files controlled by CVS
-		$data =~ s/^.*\n//; 	# delete first line: $VAR1 = {
-		$data =~ s/.*?\};\n$//;	# delete last line; };
-		
-		# sort lines
-		$data = join ("\n", sort(split(/\n/, $data)));
-		
-		# add , to the line, which was the last one
-		# (it may be moved to another position, so
-		#  the comma is needed)
-		$data =~ s/([^,])\n/$1,\n/;
-		
-		# construct data dump format
-		$data = '$VAR1 = {'."\n".$data."\n        };\n";
+		my @list;
+		foreach my $key ( sort keys %{$href} ) {
+			push @list, $key, $href->{$key};
+		}
+		$data = Dumper (\@list);
+		$data =~ s/\[/{(/;
+		$data =~ s/];\n$/)};\n/;
+	} else {
+		$data = Dumper ($href);
 	}
-	
+
 	$self->SUPER::write (\$data);
 
 	1;

@@ -1,4 +1,9 @@
-$Id: CHANGES,v 1.22 2001/03/23 14:34:56 joern Exp $
+$Id: CHANGES,v 1.23 2001/03/23 15:35:45 joern Exp $
+
+2.0.1 2001/03/23 joern
+	Bugfixes:
+	- fixed a bug in the bugfix ;)
+	  New deterministic meta file format was messed up in some cases
 
 2.0.0 2001/03/23 joern
 	Bugfixes:
