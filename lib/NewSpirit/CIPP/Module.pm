@@ -1,4 +1,4 @@
-# $Id: Module.pm,v 1.12 2001/03/05 17:11:32 joern Exp $
+# $Id: Module.pm,v 1.12.2.1 2002/04/09 08:56:03 joern Exp $
 
 package NewSpirit::CIPP::Module;
 
@@ -96,7 +96,7 @@ sub install_file {
 			# if we are in a dependency installation, we
 			# only give a brief list of the errors, and no
 			# error highlighted version of the source code
-			if ( $self->{dependency_installation} ) {
+			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
 				$self->{install_errors}->{unformatted}
 					= $CIPP->Get_Messages;
 			} else {
@@ -142,7 +142,8 @@ sub install_file {
 				} else {
 					$self->{install_errors}->{perl} =
 						$CIPP->Format_Perl_Errors (
-							\$perl_code, \$perl_errors
+							\$perl_code, \$perl_errors,
+							$self->{command_line_mode}
 						);
 				}
 

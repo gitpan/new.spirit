@@ -1,8 +1,8 @@
-#-------=-------=---------------=---------------------------------------------
-# CGI
-#       x.objectname
+##------=-------=---------------=---------------------------------------------
+# CIPPOBJECT
+# 	CGI: x.objectname
 #
-# DESCRIPTION
+# PURPOSE
 #       description
 #
 # INPUT
@@ -15,7 +15,7 @@
 #       $author
 #
 # COPYRIGHT
-#       Copyright (c) 2001, dimedis GmbH, Cologne, Germany,
+#       Copyright (c), dimedis GmbH, Cologne, Germany,
 #	All Rights Reserved
 # 
 #-----------------------------------------------------------------------------

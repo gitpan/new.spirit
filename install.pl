@@ -1,6 +1,4 @@
-#!/usr/dim/perl/bin/perl
-
-# $Id: install.pl,v 1.10.2.1 2001/10/09 10:03:01 joern Exp $
+# $Id: install.pl,v 1.10.2.3 2003/08/12 08:26:48 joern Exp $
 
 require 5.004_04;
 
@@ -84,12 +82,6 @@ __EOF
 };
 
 sub hello {
-	if ( $CFG::OS == 0 ) {
-		# this does not work with ActiveState Perl Build 519
-		my $term = Term::Cap->Tgetent({ TERM => undef, OSPEED => 9600 });
-		$term->Tputs('cl',1, \*STDOUT);
-	}
-
 	my $blanks = " " x (46-length($CFG::VERSION));
 	my @d = localtime(time);
 	my $year = $d[5]+1900;	# shit, we have a year 10000 problem!

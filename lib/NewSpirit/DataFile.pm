@@ -1,4 +1,4 @@
-# $Id: DataFile.pm,v 1.3 2001/03/23 15:35:45 joern Exp $
+# $Id: DataFile.pm,v 1.3.2.1 2003/08/07 08:12:52 joern Exp $
 
 package NewSpirit::DataFile;
 
@@ -19,7 +19,7 @@ sub read {
 	{
 		no strict;
 		$href = eval $$data;
-		croak "error reading DataFile: $@" if $@;
+		croak "error reading DataFile '$self->{filename}': $@" if $@;
 	}
 
 	return $href;

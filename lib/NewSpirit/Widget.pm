@@ -1,5 +1,7 @@
 package NewSpirit::Widget;
 
+# $Id: Widget.pm,v 1.9.2.2 2002/01/23 10:52:58 joern Exp $
+
 # abstract class for creation of HTML formular input widgets
 
 use strict;
@@ -251,7 +253,7 @@ sub input_widget {
 				-name => $name,
 				-values => [ 1, 0 ],
 				-labels => { 1 => 'on', 0 => 'off' },
-				-default => $data->{$name},
+				-default => ($data->{$name} ? 1 : 0 ),
 				-override => 1,
 				-onChange => $js_modified,
 

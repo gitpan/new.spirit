@@ -1,4 +1,4 @@
-# $Id: Install.pm,v 1.19.2.2 2001/09/21 14:00:33 joern Exp $
+# $Id: Install.pm,v 1.19.2.5 2003/08/12 08:27:10 joern Exp $
 
 package NewSpirit::Object::Install;
 
@@ -71,10 +71,11 @@ sub get_dependant_objects {
 	find (
 		sub {
 			return if /^\./;
-			/([^\.]+)$/;
+			return if not /\.([^\.]+)$/;
 			my $ext = $1;
 			return if not $ext{$ext};
 			my $dir = $File::Find::dir;
+			return if not -f "$dir/$_";
 			$dir =~ s/$project_src_dir//;
 			$dir =~ s!^/!!;
 			$dir .= "/" if $dir;
@@ -124,7 +125,7 @@ sub compile_project_ctrl {
 		      "</b>";
 		
 		print "<blockquote>\n";
-		print "$cgi_dir<br>$htdocs_dir<br>$conf_dir<br>$sql_dir<br>$lib_dir<br>\n";
+		print "$cgi_dir<br>\n$htdocs_dir<br>\n$conf_dir<br>\n$sql_dir<br>\n$lib_dir<br>\n";
 		print "</blockquote></FONT><p>\n";
 
 		rmtree ( [ $cgi_dir, $htdocs_dir, $conf_dir, $sql_dir, $lib_dir ], 0, 0);

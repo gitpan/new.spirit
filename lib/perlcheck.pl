@@ -277,22 +277,36 @@ sub writelog {
 
 	sub eval_perl_code {
 		my ($__PERL_CODE_SREF__) = @_;
+
+		eval {
+			local $SIG{ALRM} = sub { die "CIPP-TIMEOUT" };
+			alarm 10;
+			$__CATCHED__WARNINGS__='';
+			no strict;
+			eval "return; ".$$__PERL_CODE_SREF__;
+			alarm 0;
+			$__CATCHED__WARNINGS__ .= $@
+				if $@ !~ /CIPP-TIMEOUT/;
+		};
 	
-		$__CATCHED__WARNINGS__='';
-		no strict;
-		eval "return; ".$$__PERL_CODE_SREF__;
-	
-		return $__CATCHED__WARNINGS__.$@;
+		return $__CATCHED__WARNINGS__;
 	}
 
 	sub exec_perl_code {
 		my ($__PERL_CODE_SREF__) = @_;
 
-		$__CATCHED__WARNINGS__='';
-		no strict;
-		eval $$__PERL_CODE_SREF__;
+		eval {
+			local $SIG{ALRM} = sub { die "CIPP-TIMEOUT" };
+			alarm 20;
+			$__CATCHED__WARNINGS__='';
+			no strict;
+			eval $$__PERL_CODE_SREF__;
+			alarm 0;
+			$__CATCHED__WARNINGS__ .= $@
+				if $@ !~ /CIPP-TIMEOUT/;
+		};
 	
-		return $__CATCHED__WARNINGS__.$@;
+		return $__CATCHED__WARNINGS__;
 	}
 	
 	sub catch_warnings {

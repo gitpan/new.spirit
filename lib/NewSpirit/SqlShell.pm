@@ -1,4 +1,4 @@
-# $Id: SqlShell.pm,v 1.10 2001/03/19 10:13:28 joern Exp $
+# $Id: SqlShell.pm,v 1.10.2.2 2002/06/04 10:45:18 joern Exp $
 
 package NewSpirit::SqlShell;
 
@@ -45,7 +45,8 @@ sub new {
 			'display_style' => {
 				'boxed' => 1,
 				'row'   => 1,
-				'auto'  => 1
+				'auto'  => 1,
+				'tab'   => 1,
 			},
 			'screen_width'  => 'integer',
 			'history_size'  => 'integer',
@@ -371,7 +372,7 @@ reload			Reload SqlShell modules (for debugging only)
 saveprefs		Save preferences
 set [par=value]		Sets user preferences. Currently possible
 			parameters are:
-			  display_style  = {row|boxed|auto}
+			  display_style  = {row|boxed|auto|tab}
 			  history_size   = number
 			  prefs_autosafe = {on|off}
 			  screen_width   = number (0 for autosize)
@@ -423,7 +424,6 @@ sub cmd_select {
 			}
 
 			if ( $DBI::errstr ) {
-				print "huh: $DBI::errstr\n";
 				$self->print_query_result_end;
 				return $self->error;
 			}
@@ -502,7 +502,7 @@ sub cmd_desc {
 	
 	my $dbh = $self->{dbh};
 	
-	my $sth = $dbh->prepare ("select * from $table");
+	my $sth = $dbh->prepare ("select * from $table where 1=0");
 	return $self->error if $DBI::errstr;
 	
 	$sth->execute;

@@ -1,5 +1,3 @@
-# $Id: Base.pm,v 1.22.2.1 2001/09/21 11:44:09 joern Exp $
-
 package NewSpirit::CIPP::Base;
 
 $VERSION = "0.01";
@@ -73,12 +71,18 @@ my %FIELD_DEFINITION = (
 			       'in dotted notation, right: corresponding shebang line)',
 		type => 'textarea',
 	},
+	_base_project => {
+		type => 'text',
+	},
+	_base_server => {
+		type => 'text',
+	},
 );
 
 my @FIELD_ORDER_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_server_name', 'base_error_show',
 	'base_error_text', 'base_http_header', 'base_perl_lib_dir',
-	'base_default_db', 'base_history_size',
+	'base_default_db', 'base_history_size', '_base_project', '_base_server',
 );
 
 my @FIELD_ORDER_NON_DEFAULT_CONFIG = (
@@ -346,6 +350,11 @@ sub save_file {
 	# store the modified parameters back in the CGI object
 	$q->param ('base_doc_url', $base_doc_url);
 	$q->param ('base_cgi_url', $base_cgi_url);
+
+	# store project and server URL for the newspirit 
+	# command line tool
+	$q->param ('_base_project', $self->{project} );
+	$q->param ('_base_server',  "http://$ENV{SERVER_NAME}$CFG::cgi_url");
 
 	$self->SUPER::save_file;
 }

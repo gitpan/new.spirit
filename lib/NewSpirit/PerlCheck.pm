@@ -1,4 +1,4 @@
-# $Id: PerlCheck.pm,v 1.4 2001/01/29 14:56:39 joern Exp $
+# $Id: PerlCheck.pm,v 1.4.2.1 2003/04/04 09:41:20 joern Exp $
 
 package NewSpirit::PerlCheck;
 
@@ -8,6 +8,7 @@ use strict;
 use Carp;
 use FileHandle;
 use IPC::Open2;
+use Config;
 
 sub new {
 	my $type = shift;
@@ -19,7 +20,7 @@ sub new {
 	
 #	print STDERR "$$: open2 $CFG::perlcheck_program\n";
 
-	open2 ($fh_read, $fh_write, "perl $CFG::perlcheck_program")
+	open2 ($fh_read, $fh_write, "$Config{perlpath} $CFG::perlcheck_program")
 		or croak "can't call open2($CFG::perlcheck_program)";
 	
 	my $self = {

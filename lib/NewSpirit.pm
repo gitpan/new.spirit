@@ -31,12 +31,59 @@ my %MONTH = (
 	"12" => "Dec"
 );
 
+sub crypt_credentials {
+	my ($username, $password) = @_;
+	
+	my $credentials = "$username:$password";
+	for ( my $i=0; $i < length($credentials); ++$i ) {
+		substr($credentials,$i,1) =
+			chr(ord(substr($credentials,$i,1))+3);
+	}
+	
+	return $credentials;
+}
+
+sub decrypt_credentials {
+	my ($credentials) = @_;
+
+	for ( my $i=0; $i < length($credentials); ++$i ) {
+		substr($credentials,$i,1) =
+			chr(ord(substr($credentials,$i,1))-3);
+	}
+	
+	my ($username, $password) = split (/:/, $credentials, 2);
+	
+	return ($username, $password);
+}
+
 sub check_session_and_init_request {
 	my $q = shift;
 	
-	my ($username, $window);
-	my $sh = new NewSpirit::Session;
-	eval { ($username, $window) = $sh->check ($q->param('ticket'), $q->remote_addr) };
+	my ($window, $username);
+
+	my $project     = $q->param('project');
+	my $ticket      = $q->param('ticket');
+	my $credentials = $q->param('credentials');
+	
+	my ($username, $password);
+
+	my $sh;
+	if ( $ticket eq '' and $credentials ne '' ) {
+		# on the fly login via newspirit command line client
+		my $ph = new NewSpirit::Passwd ($q);
+		($username, $password) = decrypt_credentials($credentials);
+		if ( $ph->check_password ($username, $password) ) {
+			$sh = new NewSpirit::Session;
+			$ticket  = $sh->create ($q->remote_addr(), $username);
+			$q->param('ticket',$ticket);
+		}
+		
+		#
+	} else {
+		$sh = new NewSpirit::Session;
+	}
+	
+	eval { ($username, $window) = $sh->check ($ticket, $q->remote_addr) };
 	my $error = $@;
 
 	if ( $q->param('window') ) {
@@ -44,7 +91,6 @@ sub check_session_and_init_request {
 	}
 
 	if ( not $error ) {
-		my $project = $q->param('project');
 		if ( $project ) {
 			my $ph = new NewSpirit::Passwd ($q);
 			if ( not $ph->check_project_access($username, $project) ) {
@@ -60,8 +106,6 @@ sub check_session_and_init_request {
 <body bgcolor="$CFG::BG_COLOR">
 $CFG::FONT
 <b>Your user session is invalid. Please <a target="NEWSPIRIT" href="$CFG::admin_url">login</a> again.</b>
-<p>
-$error
 </FONT>
 </body>
 </html>
@@ -75,6 +119,15 @@ __HTML
 	read_user_config($username);
 
 	return $sh;
+}
+
+sub remove_on_the_fly_session {
+	my ($q) = @_;
+	return if not $q->param('credentials');
+	
+	delete_session($q);
+	
+	1;
 }
 
 sub clone_session {

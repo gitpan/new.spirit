@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: nph-folder.cgi,v 1.8 2001/07/24 15:35:26 joern Exp $
+# $Id: nph-folder.cgi,v 1.8.2.2 2001/11/23 11:18:09 joern Exp $
 
 use strict;
 BEGIN {
@@ -37,6 +37,8 @@ main: {
 	NewSpirit::print_error ($@) if $@;
 
 	%NEWSPIRIT::DATA_PER_REQUEST = ();
+
+	NewSpirit::remove_on_the_fly_session ($q);
 }
 
 sub main {

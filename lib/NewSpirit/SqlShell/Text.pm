@@ -1,4 +1,4 @@
-# $Id: Text.pm,v 1.8 2000/12/02 12:02:17 joern Exp $
+# $Id: Text.pm,v 1.8.2.2 2003/04/04 09:40:29 joern Exp $
 
 package NewSpirit::SqlShell::Text;
 use vars qw ( @ISA );
@@ -12,8 +12,9 @@ use Text::Wrap;
 sub print_current_command {
 	my $self = shift;
 
-	print "\n";
 	return if not $self->{echo};
+
+	print "\n";
 	
 	my $print_command = $self->{current_command};
 	
@@ -36,11 +37,6 @@ sub print_query_result_start {
 	$self->{__query_row_len_lref} = [];
 	
 	$self->add_query_row ($title_lref);
-	
-	return 1;
-
-	print join ("\t", @{$title_lref}),"\n";
-	print "=" x 80, "\n";
 	
 	1;
 }
@@ -95,6 +91,8 @@ sub print_query_result_end {
 		$self->print_query_result_end_row_style;
 	} elsif ( $style eq 'boxed' ) {
 		$self->print_query_result_end_boxed_style;
+	} elsif ( $style eq 'tab' ) {
+		$self->print_query_result_end_tab_style;
 	} else {
 		# automatic detection
 		my $length = 2;
@@ -216,6 +214,22 @@ sub print_query_result_end_boxed_style {
 	1;
 }
 
+sub print_query_result_end_tab_style {
+	my $self = shift;
+	
+	return if not $self->{__query_row_lref} or
+	          not @{$self->{__query_row_lref}};
+
+	foreach my $row ( @{$self->{__query_row_lref}} ) {
+		print join ("\t", map { s/\t/\\t/g; s/\n/\\n/g; $_ } @{$row}),"\n";
+	}
+	
+	$self->{__query_row_lref}     = [];
+	$self->{__query_row_len_lref} = [];
+	
+	1;
+}
+
 sub print_error {
 	my $self = shift;
 
@@ -288,12 +302,13 @@ sub get_screen_width {
 	
 	if ( not $screen_width ) {
 		# autosize
-		eval {require Term::ReadKey};
+		eval {
+			require Term::ReadKey;
+			($screen_width) = Term::ReadKey::GetTerminalSize();
+		};
 		if ( $@ ) {
 			$self->info ("Warning: could not determine screen width! Set to 79.");
 			$screen_width = 79;
-		} else {
-			($screen_width) = Term::ReadKey::GetTerminalSize();
 		}
 	}
 

@@ -1,4 +1,111 @@
-$Id: CHANGES,v 1.32.2.4 2001/10/09 10:03:01 joern Exp $
+$Id: CHANGES,v 1.32.2.18 2003/08/12 08:27:22 joern Exp $
+
+2.0.26 2003/08/11 joern
+	Bugfixes:
+	- "Project compilation" created CVS.m files.
+
+2.0.25 2003/08/07 joern
+	Bugfixes:
+	- "Project compilation" created "html.m" files for folders
+	  named "html".
+	- Error message when reading a corrupted db config file
+	  didn't contain the filename.
+
+2.0.24 2003/04/04 joern
+	Bugfixes:
+	- added a timeout to the perl syntax checker to prevent
+	  hanging processes
+	- use the actual perl binary to execute the external perl
+	  code checker program, not the one found first in PATH
+	- fixed a bug in dbshell, which crashed the program if the
+	  terminal size couldn't be determined correctly
+
+2.0.23 2002/08/21 joern
+	Bugfixes:
+	- "use strict" property removed from all object types. Files
+	  created with newspirit 2.99 (CIPP 3 enabled version)
+	  hadn't use_strict enabled, because this property was
+	  removed in 2.99. But this was interpreted as "no strict"
+	  by newspirit 2.0.x. Not using "use strict" is evil anyway,
+	  so: bye bye "no strict"... ;)
+	- missing .m (property) files are created now with the
+	  default values for the object type. This was done in memory
+	  each time, but without saving the .m file.
+
+2.0.22 2002/06/17 joern
+	Features:
+	- new parameter for DB configuration objects: "Initial Perl
+	  Statement", which is executed just after connecting to
+	  the database. Requires CIPP::Runtime 0.41 (shipped with
+	  CIPP 
+
+2.0.21 2002/06/07 joern
+	Features:
+	- dbshell.pl: added -x option which enables abort mode
+
+2.0.20 2002/06/04 joern
+	Features:
+	- dbshell.pl: support CIPP3 .db-conf files
+
+2.0.18 2002/04/08 joern
+	Features:
+	- name of new.spirit server is stored in base configuration
+	  source file
+	- newspirit command line tool has -g switch for opening
+	  a Gtk+ window with its output. useful for integration
+	  into an external IDE.
+
+2.0.17 2002/04/05 joern
+	Features:
+	- project name is stored in base configuration source file
+
+2.0.15 2002/01/23 joern
+	Features:
+	- a new attribute of the database configuration object
+	  enables you to use persistent database connections in
+	  conjunction with mod_perl or SpeedyCGI.
+
+	  Note: this requires CIPP version 2.42 with CIPP::Runtime
+	        version 0.40 in the production environment.
+
+	  You can even use programs and configurations produced
+	  with new.spirit 2.0.15 in conjunction with older CIPP
+	  releases. But then, enabling persistent database connections
+	  in new.spirit will be without effect on the production
+	  system.
+
+2.0.14 2001/11/23 joern
+	Features:
+	- new.spirit now ships with a command line client, installed
+	  as bin/newspirit. You can install programs, compile and
+	  install projects with this tool. It's usable for scripting
+	  update and installation procedures.
+	  
+	  Execute bin/newspirit to get the usage description.
+	  
+	  BE CAREAFUL: the state of this program is ALPHA. It should
+	  not destroy any data, because it calls the appropriate
+	  CGI programs remotely on the server. But don't rely too much
+	  on its output. Really safe error processing is currently
+	  not possible, because messages are mainly passed through
+	  without change. Parsing them, may fail if message formats
+	  change on the server.
+
+2.0.13 2001/10/30 joern
+	Bugfixes:
+	- generic and blob files (e.g. jar files) were not processed
+	  by 'Project Compilation'
+	- removed shebang line and execute flags from install.pl, to
+	  prevent confusing when started directly without 'perl'
+	  
+	Features:
+	- update shipped CIPP version to 2.40
+
+2.0.12 2001/10/12 joern
+	Features:
+	- dbshell.pl has a new 'set display_style' parameter: tab.
+	  This produces TAB delimited output of SELECT statements,
+	  great for creating reports.
 
 2.0.11 2001/10/08 joern
 	Bugfixes:

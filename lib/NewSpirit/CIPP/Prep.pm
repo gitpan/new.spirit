@@ -1,4 +1,4 @@
-# $Id: Prep.pm,v 1.15 2001/03/23 14:34:56 joern Exp $
+# $Id: Prep.pm,v 1.15.2.2 2002/08/21 13:10:10 joern Exp $
 
 package NewSpirit::CIPP::Prep;
 
@@ -93,7 +93,7 @@ sub print_install_errors {
 	my $self = shift;
 
 	my ($errors) = @_;
-	
+
 	my $head = qq{$CFG::FONT<FONT COLOR="red">}.
 		   qq{<b>There are \%s errors:</b>}.
 		   qq{</FONT>%s</FONT><p>\n};
@@ -318,6 +318,16 @@ sub check_for_perl_errors {
 	}
 	
 	return $rc;
+}
+
+sub get_meta_data {
+	my $self = shift;
+
+	my $meta = $self->SUPER::get_meta_data;
+
+	$meta->{use_strict} = 1;
+	
+	return $meta;
 }
 
 1;

@@ -1,4 +1,4 @@
-# $Id: DB.pm,v 1.13 2001/04/03 14:53:39 joern Exp $
+# $Id: DB.pm,v 1.13.2.3 2002/06/17 13:59:24 joern Exp $
 
 package NewSpirit::CIPP::DB;
 
@@ -27,6 +27,10 @@ my %FIELD_DEFINITION = (
 		description => 'AutoCommit',
 		type => 'switch'
 	},
+	db_cache_enable => {
+		description => 'Enable Connection Caching',
+		type => 'switch'
+	},
 	db_env => {
 		description => 'Environment Variables',
 		type => 'textarea'
@@ -35,11 +39,16 @@ my %FIELD_DEFINITION = (
 		description => 'Initial SQL Statement',
 		type => 'textarea'
 	},
+	db_init_perl => {
+		description => 'Initial Perl Statements<br>($dbh is given)',
+		type => 'textarea'
+	},
 );
 
 my @FIELD_ORDER = (
 	'db_source', 'db_user', 'db_pass',
-	'db_autocommit', 'db_env', 'db_init'
+	'db_autocommit', 'db_cache_enable',
+	'db_env', 'db_init', 'db_init_perl'
 );
 
 use Carp;
@@ -77,6 +86,7 @@ sub convert_data_from_spirit1 {
 		db_user 	=> $old_data->{DB_USER},
 		db_pass 	=> $old_data->{DB_PASS},
 		db_autocommit	=> $old_data->{DB_AUTOCOMMIT} =~ /an/i ? 1 : 0,
+		db_cache_enable => 0,
 		db_env 		=> $old_data->{DB_ENV},
 		db_init		=> ''
 	);
@@ -194,6 +204,8 @@ sub real_install_file {
 	$pkg =~ s!\.!_!g;
 	$pkg = '$CIPP_Exec::cipp_db_'.$pkg;
 	
+	$data->{db_cache_enable} ||= '0';
+	
 	open ($fh, "> $install_file")
 		or die "can't write '$install_file'";
 	print $fh <<__EOF;
@@ -201,7 +213,9 @@ ${pkg}::data_source = '$data->{db_source}';
 ${pkg}::user = '$data->{db_user}';
 (${pkg}::password = q{$data->{db_pass}} ) =~ s/%(..)/chr(ord(pack('C', hex(\$1)))^85)/eg;
 ${pkg}::autocommit = $data->{db_autocommit};
+${pkg}::cache_enable = $data->{db_cache_enable};
 ${pkg}::init = q{$data->{db_init}};
+${pkg}::init_perl = q{$data->{db_init_perl}};
 __EOF
 
 	foreach my $env ( split (/\n/, $data->{db_env}) ) {

@@ -1,4 +1,4 @@
-# $Id: Blob.pm,v 1.1 2001/07/24 15:35:26 joern Exp $
+# $Id: Blob.pm,v 1.1.2.1 2001/11/12 16:57:38 joern Exp $
 
 package NewSpirit::Object::Blob;
 
@@ -34,7 +34,8 @@ sub install_dependant_objects {
 	}
 	
 	# otherwise no dependency installation necessary
-	print "No dependency installation necessary<p>\n";
+	print "No dependency installation necessary<p>\n"
+		if not $self->{dependency_installation};
 	
 	1;
 }

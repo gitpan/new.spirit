@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: admin.cgi,v 1.28 2001/07/24 15:35:26 joern Exp $
+# $Id: admin.cgi,v 1.28.2.2 2002/04/05 14:56:23 joern Exp $
 
 use strict;
 BEGIN {
@@ -42,7 +42,7 @@ sub main {
 	my $e = $q->param('e');
 	
 	my $ph;	# NewSpirit::Passwd Handle
-	if ( $e ne '' and $e ne 'login' and $e ne 'changes' ) {
+	if ( $e ne '' and $e ne 'login' and $e ne 'check' and $e ne 'changes' ) {
 		my $sh; #  NewSpirit::Session Handle
 		($sh, $ph) = NewSpirit::check_session_and_init_request ($q);
 	}
@@ -52,6 +52,9 @@ sub main {
 
 	} elsif ( $e eq 'login' ) {
 		login($q);
+
+	} elsif ( $e eq 'check' ) {
+		login_check($q);
 
 	} elsif ( $e eq 'logout' ) {
 		NewSpirit::delete_session ($q);
@@ -129,7 +132,7 @@ sub login_form {
   </td></tr>
   <tr><td colspan=2 align=right>
     $CFG::FONT
-    <input type="button" value="Anmelden" onClick="document.login.submit()">
+    <input type="button" value="Login" onClick="document.login.submit()">
     </font>
   </td></tr>
 </table>
@@ -156,6 +159,23 @@ for recent changes of new.spirit<br></small>
 </body>
 </html>
 __HTML
+}
+
+sub login_check {
+	my $q = shift;
+
+	my ($username, $password) = (
+		$q->param('username'),
+		$q->param('password')
+	);
+	
+	my $ph = new NewSpirit::Passwd ($q);
+
+	if ( not $ph->check_password ($username, $password) ) {
+		print "invalid credentials\n";
+	} else {
+		print "ok\n";
+	}
 }
 
 sub login {

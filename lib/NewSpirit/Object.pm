@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.51.2.2 2001/10/09 10:03:01 joern Exp $
+# $Id: Object.pm,v 1.51.2.4 2002/08/21 13:09:39 joern Exp $
 
 package NewSpirit::Object;
 
@@ -163,7 +163,7 @@ use File::Basename;
 sub new {
 	my $type = shift;
 	my %par = @_;
-	
+
 	# todo: take all paremters here from %par
 	
 	my $set_lock = $par{set_lock};
@@ -173,10 +173,49 @@ sub new {
 	my $base_conf 	= $par{base_config_object} ||
 			  $CFG::default_base_conf;
 
-	my $project = $q->param('project')
-		or croak "NewSpirit::Object: missing project";
+	# in command line mode object names are passed in dotted
+	# notation
+	my ($project, $project_info);
+	my $command_line_mode = $q->param('command_line_mode');
+	if ( $command_line_mode == 1 ) {
+		my $object = $q->param('object');
+		# strip off project
+		$object =~ /^([^\.]+)/;
+		$project = $1;
+		$q->param('project',$project);
+		
+		# resolve dotted object name to relative file
+		$project_info = NewSpirit::get_project_info ($project);
+		my $project_src = $project_info->{root_dir}."/src";
+		my $object_file = $type->get_object_src_file (
+			$object, $project_src
+		);
+		$object_file =~ s!^$project_src/!!;
+		$q->param('object', $object_file);
+		
+		# the same for a given base_conf
+		if ( $par{base_config_object} ) {
+			$base_conf = $type->get_object_src_file (
+				$par{base_config_object}, $project_src
+			);
+			$base_conf =~ s!^$project_src/!!;
+		}
+		
+		# we reset the command_line_mode flag here, because
+		# more objects may be initialized with this query.
+		# this query is completely converted into non-
+		# command-line mode, so subsequent conversions would
+		# fail.
+		$q->param('command_line_mode',0);
+
+	} else {
+		$project = $q->param('project')
+			or croak "NewSpirit::Object: missing project";
+		$project_info = NewSpirit::get_project_info ($project);
+	}
 
 	$object_orig ||= $q->param('object');
+	
 	my $object = $object_orig;
 
 	croak "NewSpirit::Object: missing object" unless $object;
@@ -191,7 +230,6 @@ sub new {
 		$NewSpirit::Object::object_types->{$object_type};
 	my $module = $object_type_config->{module};
 
-	my $project_info = NewSpirit::get_project_info ($project);
 	my $project_root_dir = $project_info->{root_dir};
 
 	my $object_file = "$project_root_dir/src/$object";
@@ -206,7 +244,7 @@ sub new {
 		# the depend-all object type is virtual type,
 		# no file exists for this type, so file checking is
 		# disabled for depend-all.
-		croak "object_does_not_exist\t$object_name\tObject file '$object_file' does not exist"
+		confess "object_does_not_exist\t$object_name\tObject file '$object_file' does not exist"
 			unless -r $object_file;
 	}
 
@@ -326,7 +364,8 @@ sub new {
 		username => $q->param('username'),
 		event => $event,
 		window => $q->param('window'),
-		install_errors => []
+		install_errors => [],
+		command_line_mode => $command_line_mode,
 	};
 
 	eval "use $module";
@@ -1400,6 +1439,9 @@ sub get_meta_data {
 				if defined $properties->{$prop}->{default};
 		}
 		
+		# create meta file
+		$self->save_meta_data ( $self->{_meta_data} );
+
 	} else {
 		my $df = new NewSpirit::DataFile ($meta_filename);
 		$self->{_meta_data} = $df->read;
@@ -1561,7 +1603,8 @@ sub install_last_saved_ctrl {
 	
 	$self->object_header ('install last saved object');
 
-	print <<__HTML;
+	if ( not $self->{command_line_mode} ) {
+		print <<__HTML;
 $CFG::FONT<font color="red">
 <b>WARNING:</b><br>
 This procedure installs the file directly from the source<br>
@@ -1570,6 +1613,7 @@ are discarded!
 </font></font>
 <p>
 __HTML
+	}
 
 	$self->create_history_file;
 	$self->install;
@@ -2697,6 +2741,7 @@ sub install {
 	my $self = shift;
 	
 	my $verbose = not $self->{dependency_installation};
+#	$verbose = 0 if $self->{command_line_mode};
 
 	$verbose && $self->print_pre_install_message;
 
@@ -2816,8 +2861,6 @@ sub print_install_errors {
 
 	my ($errors) = @_;
 	$errors ||= $self->{install_errors};
-
-use Data::Dumper; print "<pre>",Dumper($errors),"</pre>";
 
 	print <<__HTML;
 $CFG::FONT<FONT COLOR="red">
@@ -3899,25 +3942,31 @@ sub check_properties {
 # get_object_src_file - returns the source file to a given object name
 #---------------------------------------------------------------------
 # SYNOPSIS:
-#	$object_src_file = $self->get_object_src_file ($object_name)
+#	$object_src_file = $self->get_object_src_file (
+#		$object_name [ , $project_src_dir ]
+#	);
 #
 # DESCRIPTION:
 #	The $object_name (dotted notation) is translated to the
 #	object source file. If the object does not exist, undef
-#	will be returned
+#	will be returned.
+#
+#	If $project_src_dir is not passed, $self->{project_src_dir}
+#	ist used.
 #---------------------------------------------------------------------
 
 sub get_object_src_file {
-	my $self = shift;
+	my $thing = shift;
 	
-	my ($object_name) = @_;
+	my ($object_name, $project_src_dir) = @_;
 
 	my $src_file = $object_name;
 
 	$src_file =~ s/^[^\.]+\.//;
 	$src_file =~ s!\.!/!g;
 	
-	$src_file = "$self->{project_src_dir}/$src_file";
+	$project_src_dir ||= $thing->{project_src_dir};
+	$src_file = "$project_src_dir/$src_file";
 	
 	my $dir  = dirname $src_file;
 	my $file = basename $src_file;

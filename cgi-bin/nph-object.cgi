@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: nph-object.cgi,v 1.28 2001/07/24 15:35:26 joern Exp $
+# $Id: nph-object.cgi,v 1.28.2.2 2001/11/23 11:18:09 joern Exp $
 
 use strict;
 BEGIN {
@@ -62,6 +62,8 @@ main: {
 	my $exception_handled = handle_exception ($@) if $@;
 	
 	NewSpirit::print_error ($@) if $@ and not $exception_handled;
+
+	NewSpirit::remove_on_the_fly_session ($q);
 
 	%NEWSPIRIT::DATA_PER_REQUEST = ();
 }

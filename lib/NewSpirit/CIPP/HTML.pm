@@ -1,4 +1,4 @@
-# $Id: HTML.pm,v 1.14 2001/03/05 17:11:32 joern Exp $
+# $Id: HTML.pm,v 1.14.2.1 2002/04/09 08:56:03 joern Exp $
 
 package NewSpirit::CIPP::HTML;
 
@@ -107,7 +107,7 @@ sub install_file {
 		if ( ! $CIPP->Get_Preprocess_Status ) {
 			# uh oh, errors! ;)
 			$ok = 0;
-			if ( $self->{dependency_installation} ) {
+			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
 				$self->{install_errors}->{unformatted}
 					= $CIPP->Get_Messages;
 			} else {
@@ -135,7 +135,8 @@ sub install_file {
 				$ok = 0;
 				$self->{install_errors}->{perl} =
 					$CIPP->Format_Perl_Errors(
-						\$perl_code, \$perl_errors
+						\$perl_code, \$perl_errors,
+						$self->{command_line_mode}
 					);
 				unlink $tmp_html_file;
 			} else {

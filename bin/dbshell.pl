@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: dbshell.pl,v 1.16 2001/07/24 15:35:26 joern Exp $
+# $Id: dbshell.pl,v 1.16.2.4 2002/06/07 15:31:09 joern Exp $
 
 use strict;
 use Getopt::Std;
@@ -33,21 +33,22 @@ BEGIN {
 	}
 }
 
-my $VERSION = "0.07";
+my $VERSION = "0.11";
 my $USAGE;
 
 if ( $STATIC ) {
 	$USAGE =<<__EOF;
 
-dbshell.pl Version $VERSION - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
+dbshell.pl Version $VERSION - Copyright 2001-2002 (c) dimedis GmbH, Cologne, Germany
 
-usage: dbshell.pl [-s] [-e] [-u username] [-p password] DBI-Data-Source
-       dbshell.pl [-s] [-e] new.spirit-db-config-file
-       dbshell.pl [-s] [-e] new.spirit-sql-prod-file
+usage: dbshell.pl [-s] [-e] [-x] [-u username] [-p password] DBI-Data-Source
+       dbshell.pl [-s] [-e] [-x] new.spirit-db-config-file
+       dbshell.pl [-s] [-e] [-x] new.spirit-sql-prod-file
 
        -e      echo sql statements
        -s      print error summary on exit
-       
+       -x      abort on error
+
        In a new.spirit production environment (where no sources
        are available) you can pass a new.spirit-sql-prod-file
        (located in the prod/sql folder) or a new.spirit-db-config-file
@@ -61,16 +62,17 @@ __EOF
 } else {
 	$USAGE =<<__EOF;
 
-dbshell.pl Version $VERSION - Copyright 2001 (c) dimedis GmbH, Cologne, Germany
+dbshell.pl Version $VERSION - Copyright 2001-2002 (c) dimedis GmbH, Cologne, Germany
 
-usage: dbshell.pl [-s] [-u username] [-p password] DBI-Data-Source
-       dbshell.pl [-s] [-e] new.spirit-Database-Object
-       dbshell.pl [-s] [-e] new.spirit-SQL-Object
-       dbshell.pl [-s] [-e] new.spirit-db-config-file
-       dbshell.pl [-s] [-e] new.spirit-sql-prod-file
+usage: dbshell.pl [-s] [-u username] [-p password] [-x] DBI-Data-Source
+       dbshell.pl [-s] [-e] [-x] new.spirit-Database-Object
+       dbshell.pl [-s] [-e] [-x] new.spirit-SQL-Object
+       dbshell.pl [-s] [-e] [-x] new.spirit-db-config-file
+       dbshell.pl [-s] [-e] [-x] new.spirit-sql-prod-file
 
        -e      echo sql statements
        -s      print error summary on exit
+       -x      abort on error
 
        If you pass a new.spirit-Database-Object, its information
        is used for connecting the database. If you pass a
@@ -94,13 +96,13 @@ $| = 1;
 
 main: {
 	my %opts;
-	my $ok = getopts ('esu:p:', \%opts);
+	my $ok = getopts ('xesu:p:', \%opts);
 	
 	my $db_info = shift @ARGV;
 	
 	if ( not $ok or not $db_info or @ARGV ) {
 		print $USAGE;
-		exit;
+		exit 1;
 	}
 
 	eval {
@@ -159,7 +161,7 @@ sub exception {
 	$message =~ s/ at .*?line\s*\d+\.//;
 	
 	print "Exception: $message\n\n";
-	exit;
+	exit 1;
 }
 
 sub info {
@@ -186,7 +188,7 @@ sub get_newspirit_src_db_conf {
 		print "       database via a new.spirit database configuration object!\n";
 		print "\n";
 		print "The error message was:\n$@\n";
-		exit;
+		exit 1;
 	}
 	
 	my $cgi = bless {
@@ -215,7 +217,7 @@ sub get_newspirit_src_db_conf {
 	
 	if ( $@ ) {
 		print STDERR "Can't find a new.spirit DB or SQL object with this name!\n\n";
-		exit;
+		exit 1;
 	}
 	
 	if ( $db_obj->{object_type} eq 'cipp-sql' ) {
@@ -301,8 +303,16 @@ sub get_newspirit_prod_db_conf {
 	close DBCONFIG;
 	
 	$config =~ s/::cipp.*?::/::/g;
-	eval $config;
+	my $cipp3_config = eval $config;
 	croak "can't eval config: $@" if $@;
+
+	if ( ref $cipp3_config ) {
+		return (
+			username => $cipp3_config->{user},
+			password => $cipp3_config->{password},
+			source   => $cipp3_config->{data_source},
+		);
+	}
 
 	return (
 		username => $CIPP_Exec::user,
@@ -405,6 +415,8 @@ sub db_shell {
 		preference_file => home_dir()."/.dbshell_prefs"
 	);
 
+	$shell->{abort_mode} = $opts_href->{x};
+
 	if ( $initialize_history ) {
 		$shell->info ("Initializing command history");
 		initialize_history (
@@ -422,7 +434,7 @@ sub db_shell {
 
 	$shell->loop;
 
-	print "\n";
+	print "\n" if $opts_href->{e};
 
 	$shell->error_summary if not $shell->{abort_mode} and
 	                         $print_error_summary;

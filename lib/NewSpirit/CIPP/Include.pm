@@ -1,4 +1,4 @@
-# $Id: Include.pm,v 1.13 2001/03/05 17:11:32 joern Exp $
+# $Id: Include.pm,v 1.13.2.1 2002/04/09 08:56:03 joern Exp $
 
 package NewSpirit::CIPP::Include;
 
@@ -97,7 +97,7 @@ sub install_file {
 			# if we are in a dependency installation, we
 			# only give a brief list of the errors, and no
 			# error highlighted version of the source code
-			if ( $self->{dependency_installation} ) {
+			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
 				$self->{install_errors}->{unformatted}
 					= $CIPP->Get_Messages;
 			} else {

@@ -1,4 +1,4 @@
-# $Id: CGI.pm,v 1.19 2001/03/05 17:11:32 joern Exp $
+# $Id: CGI.pm,v 1.19.2.2 2002/04/09 08:56:03 joern Exp $
 
 package NewSpirit::CIPP::CGI;
 
@@ -101,7 +101,7 @@ sub install_file {
 			# if we are in a dependency installation, we
 			# only give a brief list of the errors, and no
 			# error highlighted version of the source code
-			if ( $self->{dependency_installation} ) {
+			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
 				$self->{install_errors}->{unformatted}
 					= $CIPP->Get_Messages;
 			} else {
@@ -130,7 +130,8 @@ sub install_file {
 				} else {
 					$self->{install_errors}->{perl} =
 						$CIPP->Format_Perl_Errors (
-							\$perl_code, \$perl_errors
+							\$perl_code, \$perl_errors,
+							$self->{command_line_mode},
 						);
 				}
 				
@@ -153,7 +154,7 @@ sub install_file {
 		}
 	} else {
 		$ok = 0;
-		push @{$self->{install_errors}->{other}}, "Can't read '$self->{object_file}'!";
+		push @{$self->{install_errors}->{other}}, "Can't read '$self->{object_file}': $!";
 	}
 
 	$self->{_perl_code} = \$perl_code;

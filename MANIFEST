@@ -3,7 +3,6 @@ CHANGES.txt
 MANIFEST
 README
 README.txt
-TODO
 RELEASE
 RELEASE.txt
 bin
@@ -11,6 +10,7 @@ bin/convert_from_spirit1x.pl
 bin/convert_cipp-img.pl
 bin/dbshell.pl
 bin/mkstatic_dbshell.sh
+bin/newspirit
 cgi-bin
 cgi-bin/admin.cgi
 cgi-bin/pbrowser.cgi
@@ -127,7 +127,7 @@ lib/NewSpirit/SqlShell/Text.pm
 cpan
 cpan/CIPP.pm
 perlmodules
-perlmodules/CIPP-2.37.tar.gz
+perlmodules/CIPP-2.42.tar.gz
 license
 license/Artistic.txt
 license/GPL.txt
