@@ -1,4 +1,4 @@
-# $Id: SqlShell.pm,v 1.8 2000/12/02 12:02:17 joern Exp $
+# $Id: SqlShell.pm,v 1.10 2001/03/19 10:13:28 joern Exp $
 
 package NewSpirit::SqlShell;
 
@@ -147,6 +147,9 @@ sub save_preferences {
 sub get_next_command_line {
 	my $self = shift;
 	
+	# return if we are already at EOF
+	return if $self->{eof};
+
 	# call get_line callback if defined
 	my $get_line_cb = $self->{get_line_cb};
 
@@ -160,6 +163,8 @@ sub get_next_command_line {
 	if ( $$sql_sref =~ m/(.*)\n?/g ) {
 		return $1;
 	} else {
+#		print "no line found<br>\n";
+		$self->{eof} = 1;
 		return;
 	}
 }
@@ -172,10 +177,14 @@ sub next_command {
 	$self->{command_completed} = 1;
 
 	my $command;
+#	print "command empty<br>\n";
+
 	while (1) {
 		my $line = $self->get_next_command_line;
 		last if not defined $line;
 		next if not $line;
+
+#		print "got line: $line<br>\n";
 
 		$self->{command_completed} = 0;
 
@@ -188,6 +197,7 @@ sub next_command {
 		$command .= "\n";
 
 		if ( $command =~ /^\s*;\n$/ ) {
+#			print "got empty command!<br>\n";
 			$command = '';
 			next;
 		}
@@ -201,7 +211,8 @@ sub next_command {
 	}
 	
 	$command =~ s/^\s+//;
-	$command =~ s/;\n$//;
+	$command =~ s/\s$//;
+	$command =~ s/;$//;
 
 	return $command;
 }

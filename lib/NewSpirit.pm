@@ -59,7 +59,7 @@ sub check_session_and_init_request {
 <head><title>$CFG::window_title</title></head>
 <body bgcolor="$CFG::BG_COLOR">
 $CFG::FONT
-<b>Your user session is invalid. Please <a href="$CFG::admin_url">login</a> again.</b>
+<b>Your user session is invalid. Please <a target="NEWSPIRIT" href="$CFG::admin_url">login</a> again.</b>
 <p>
 $error
 </FONT>

@@ -1,5 +1,5 @@
 
-# $Id: Prefs.pm,v 1.4 2000/12/02 12:02:17 joern Exp $
+# $Id: Prefs.pm,v 1.5 2001/03/12 11:15:19 joern Exp $
 
 package NewSpirit::Prefs;
 
@@ -234,6 +234,8 @@ sub event_save {
 	my $username = $q->param('username');
 
 	$self->save ($username);
+
+	NewSpirit::read_user_config($username);
 
 	$self->event_edit ('User preferences saved');
 }

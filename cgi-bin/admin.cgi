@@ -1,6 +1,6 @@
 #!/usr/local/perl/5.004_04/bin/perl
 
-# $Id: admin.cgi,v 1.23 2001/02/19 15:24:35 joern Exp $
+# $Id: admin.cgi,v 1.25 2001/03/23 14:34:56 joern Exp $
 
 use strict;
 BEGIN {
@@ -173,22 +173,31 @@ sub login {
 		return;
 	}
 	
-	# unlock passwd
-	$ph = undef;
-	
+	# read user config
+	NewSpirit::read_user_config ($username);
+
 	# now we create a user session
 	my $sh = new NewSpirit::Session;
 	my $ticket  = $sh->create ($q->remote_addr(), $username);
 
-	my $project = $sh->get_attrib('project');
+	my $project;
+	if ( $CFG::LOGIN_SHOW_LAST_PROJECT ) {
+		$project = $sh->get_attrib('project');
+		
+		# check if user has access to this project. If not, 
+		# reset project here, otherwise the user is unable
+		# to login, because he only sees "access denied"
+		# messages
+		$project = '' if not $ph->check_project_access($username, $project) 
+	}
+
+	# unlock passwd and session files
+	$ph = undef;
 	$sh = undef;
 	
 	# put params in query object, frameset() needs them
 	$q->param('ticket', $ticket);
 	$q->param('project', $project);
-
-	# read user config
-	NewSpirit::read_user_config ($username);
 
 	frameset($q);
 }

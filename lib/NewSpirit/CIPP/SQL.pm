@@ -1,4 +1,4 @@
-# $Id: SQL.pm,v 1.18 2001/02/09 11:00:38 joern Exp $
+# $Id: SQL.pm,v 1.19 2001/03/23 14:34:56 joern Exp $
 
 package NewSpirit::CIPP::SQL;
 
@@ -291,14 +291,14 @@ sub install_file {
 	} else {
 		$db =~ s!/!.!g;
 		$db =~ s!cipp-db$!db-conf!;
-		$db = $self->{project}.".".$db;
 	}
 
 	my $prod_dir = $self->{project_prod_dir};
 	my $back_prod = $filename;
+
 	$back_prod =~ s!^$prod_dir/!!;
-	$back_prod =~ s!/.*?$!!;
-	$back_prod =~ s/\w+/../g;
+	$back_prod =~ s!/[^/]*?$!!;
+	$back_prod =~ s![^/]+!..!g;
 	
 	open (OUT, ">$filename") or croak "can't write $filename";
 	print OUT "$back_prod/config/$db\n";

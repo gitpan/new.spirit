@@ -1,11 +1,11 @@
-# $Id: Config.pm,v 1.9 2001/02/14 16:53:00 joern Exp $
+# $Id: Config.pm,v 1.10 2001/03/12 11:15:19 joern Exp $
 
 package NewSpirit::CIPP::Config;
 
 $VERSION = "0.01";
 @ISA = qw(
-	NewSpirit::CIPP::Prep
 	NewSpirit::CIPP::ProdReplace
+	NewSpirit::CIPP::Prep
 );
 
 use strict;

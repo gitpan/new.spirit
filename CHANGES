@@ -1,4 +1,86 @@
-$Id: CHANGES,v 1.17 2001/03/05 17:11:32 joern Exp $
+$Id: CHANGES,v 1.22 2001/03/23 14:34:56 joern Exp $
+
+2.0.0 2001/03/23 joern
+	Bugfixes:
+	- fixed a regex which checks object existence. Due to this bug
+	  specifying a replace action object failed under some
+	  circumstances
+	- Project Installation: "Refresh Base Configs Popup" link was
+	  missing, if no base configs are in the base config cache,
+	  so recreating the cache was impossible in this case
+	- Alternative Base Configurations:
+	  Falling back to default project root did not work.
+	- format of object property data files is now deterministic,
+	  so CVS should not report unnecessary conflicts anymore.
+	- meta files of CIPP Config objects were saved unnecessaryly
+	  on every access, which caused problems in read only
+	  environments
+	- login was impossible if the users access right on his last
+	  selected project was revoked
+	- dbshell.pl: execution of prod/sql scripts was broken.
+	  dbshell.pl was unable to find the correspondent database
+	  configuration.
+
+	Because there are no significant known bugs on the TODO list:
+
+	WELCOME TO VERSION 2.0.0 :)
+
+1.99.22 2001/03/19 joern
+	Bugfixes:
+	- SQL execution was completely broken, due to a bug in the
+	  command line parser module
+
+1.99.21 2001/03/15 joern
+	Bugfixes:
+	- Mozilla wrapped long lines of the project tree browser
+	- If the last command of a SQL script was not terminated
+	  by a semicolon, it was executed infinetely.
+
+	Features:
+	- save trigger filter
+	  Now you can specify a save filter script for each object.
+	  This means: everytime you save the object, this filter
+	  script is invoked with the source of the object connected
+	  to STDIN. It is possible to pass the full path name of
+	  the object file as an argument, using a %s wildcard.
+	  Configuration of the save filter script is placed in the
+	  properties dialog.
+	- Project Installation: #! is implicitely added to the
+	  shebang line, if the user did omit it
+
+1.99.20 2001/03/14 joern
+	Features:
+	- you now can configure an Perl shebang line for project
+	  installation in CIPP Base Configuration objects
+
+1.99.19 2001/03/09 joern
+	Bugfixes:
+	- included actual CIPP version 2.29, which fixes a serious
+	  <?!HTTPHEADER> bug (see Changes file of CIPP, for details)
+	- user preferences are now applied immediately after saving
+	
+	Features:
+	- New preferences:
+	  - Treeview font face/size
+	  - Select last opened project by default after login
+	- new created projects now have default values in their
+	  base configuration (e.g. http header Pragma: no-cache)
+	- new created SQL objects now refer to the default
+	  database configuration
+	- you can limit the maximum size of the object history,
+	  by setting an appropriate value in the base configuration
+	  (default is 20)
+	- Project Compilation "replace object" output reduced.
+	- new.spirit now checks for object existence, if you configure
+	  a object to be replaced while installation
+	- during the installation process your are warned, if an object
+	  is replaced more than once
+
+1.99.18 2001/03/07 joern
+	Features:
+	- included actual CIPP version 2.28
+	- added htdocs/doc/index.html for some information about
+	  documentation
 
 1.99.17 2001/03/05 joern
 	Bugfixes:

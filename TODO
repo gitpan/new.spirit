@@ -1,24 +1,28 @@
-$Id: TODO,v 1.20 2001/03/07 17:48:30 joern Exp $
+$Id: TODO,v 1.24 2001/03/23 14:34:56 joern Exp $
 
-- BUG
-  - dbshell.pl auf src Dateien geht nicht
-
-- BUG !!!
-  - mdd komplett übersetzen hängt!
+- CIPP Doku
+  - <?SQL RESULT> 0E0 dokumentieren
 
 - BUG:
   <?GETURL> cipp-css funzt nich
 
+- Diverses
+  - CR/LF Conversion bei Prod Install
+  - DB Replace prüfen
+  - SQL Objekte: Shebang Line zu dbshell.pl?
+  - <?IMG WIDTH HEIGHT> bestimmen
+  - DB src Objekte bei "Project Install" read only machen
+  - "open with treeview" nicht abwählen
+  - open in window auch auf Ordnern
+  - "Refresh Database Popup": eingetragene Felder sind weg, wenn
+    nicht vorher gespeichert
+  - <nobr> bei Projekt-Install-Paket-Erstellen, Übersetzen, etc.
+
 - CIPP "Created/Copyright" Kommentar
   - warum nicht immer da?
 
-- BUG
-  - Wenn User sich selbst die Rechte an seinem letzten Projekt
-    entzieht, kann er sich nicht mehr einloggen (da keine Rechte
-    auf das aktuell gewählte Projekt)
-
-- BUG !!!
-  - CIPP::Manual nicht korrekt, wg. !HTTPHEADER
+- dbshell.pl
+  - interaktive Frage: "soll ich weitermachen?"
 
 - <?REQUIRE>
   - Compile-Zeit Check auf Modulexistenz?
@@ -37,9 +41,6 @@ $Id: TODO,v 1.20 2001/03/07 17:48:30 joern Exp $
 - Treeview:
   - Suchen nach Objektnamen
   - QuickAccess Liste
-
-- Doku
-  - <?!HTTPHEADER>
 
 - Project Installation
 
@@ -74,7 +75,7 @@ $Id: TODO,v 1.20 2001/03/07 17:48:30 joern Exp $
   - Tree Refresh
   - JS zum Öffnen, verhindert mtl. Maustaste
 
-- Hauptmenü: aktives Projekte in der Projektauswahlliste markieren
+- Hauptmenü: aktives Projekt in der Projektauswahlliste markieren
 
 - globale Copyright Vorgabe
 
@@ -91,4 +92,3 @@ $Id: TODO,v 1.20 2001/03/07 17:48:30 joern Exp $
 - CIPP
   - filesystem caching of preprocessed Includes 
   - last SQL; dokumentieren -> CIPP Befehl dafür kreiren
-  - Datenbankconnections dynamisch machen

@@ -1,6 +1,6 @@
 #!/usr/local/perl/5.004_04/bin/perl
 
-# $Id: pbrowser.cgi,v 1.21 2001/02/08 16:12:30 joern Exp $
+# $Id: pbrowser.cgi,v 1.23 2001/03/16 15:46:35 joern Exp $
 
 use strict;
 
@@ -291,7 +291,7 @@ sub tree {
 	
 	js_open_editor_window($q);
 
-	print "$CFG::FONT\n";
+	print qq{<nobr><font face="$CFG::FONT_FACE_TV" size="$CFG::FONT_SIZE_TV">\n};
 
 	my $project = $q->param('project');
 	my $ticket = $q->param('ticket');
@@ -481,7 +481,7 @@ sub tree {
 		++$i;
 	}
 
-	print "</FONT>\n";
+	print "</font></nobr>\n";
 
 	my $self;
 	$self->{open_folders} = undef;

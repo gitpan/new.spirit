@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.43 2001/02/19 15:24:35 joern Exp $
+# $Id: Object.pm,v 1.46 2001/03/23 14:34:56 joern Exp $
 
 package NewSpirit::Object;
 
@@ -66,6 +66,11 @@ package NewSpirit::Object;
 # delete 			Delete a object
 # get_show_dependency_key	returns key for dependency browser
 # get_object_type		returns type of this object
+# canonify_object_name 		returns canonfied object name (replaces
+#				project part of name with project of this
+#				object)
+# check_properties		checks if user edited properties are ok
+# get_object_src_file		returns the source file to a given object name
 #
 # Stub methods, to be overloaded:
 # -------------------------------
@@ -1145,6 +1150,17 @@ __HTML
 		data_href => $meta_data
 	);
 
+	$self->input_widget (
+		read_only => $no_form_elements,
+		name      => "save_filter_cmd",
+		info_href => {
+			description => "Save trigger command",
+			default => "",
+			type => "text"
+		},
+		data_href => $meta_data
+	);
+
 	$self->type_specific_properties ($no_form_elements);
 
 	print <<__HTML;
@@ -1340,6 +1356,7 @@ sub save_ctrl {
 		print qq{$CFG::FONT Successfully saved to<br><b>$self->{object_file}</b></FONT><p>\n};
 
 		$self->install;
+		$self->execute_save_filter;
 
 		if ( $self->{object_type_config}->{file_upload} ) {
 			print <<__HTML;
@@ -1363,6 +1380,63 @@ __HTML
 	NewSpirit::end_page();
 	
 }
+
+
+#---------------------------------------------------------------------
+# execute_save_filter - executes a save filter command, if configured
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->execute_save_filter
+#
+# DESCRIPTION:
+#	If a save filter command is configured for this object,
+#	it is executed here. Output is given to STDOUT.
+#---------------------------------------------------------------------
+
+sub execute_save_filter {
+	my $self = shift;
+	
+	my $meta = $self->get_meta_data;
+	
+	return if not $meta->{save_filter_cmd};
+
+	print "$CFG::FONT\n";
+
+	my $cmd = $meta->{save_filter_cmd};
+	
+	$cmd = sprintf ($cmd, $self->{object_file});
+	
+	print "<p>Executing save filter command...<p>\n";
+
+	my ($file) = split (/\s+/, $cmd, 2);
+	if ( not -f $file ) {
+		print "<p><b>Error</b>: can't find $file<p>\n";
+		print "</font>\n";
+		return;
+	}
+	if ( not -x $file ) {
+		print "<p><b>Error</b>: can't execute $file<p>\n";
+		print "</font>\n";
+		return;
+	}
+	
+	open (IN, "$cmd < $self->{object_file} 2>&1 |")
+		or die "can't fork process for save filter $cmd";
+	print "<font face=courier><blockquote><pre>\n";
+	while (<IN>) {
+		print $_;
+	}
+	print "</pre></blockquote></font>\n";
+
+	if ( not close IN ) {
+		print "<b>Warning</b>: program exists with error status!<p>\n";
+	}
+
+	print "</font>\n";
+
+	1;
+}
+
 
 #---------------------------------------------------------------------
 # install_last_saved_ctrl - CGI event handler for the
@@ -1528,6 +1602,8 @@ sub save_properties_ctrl {
 
 	return if $self->save_not_possible;
 	
+	$self->object_header ('save properties');
+
 	# first, we load the old properties
 	my $meta_href = $self->get_meta_data;
 	
@@ -1540,24 +1616,34 @@ sub save_properties_ctrl {
 	my $q = $self->{q};
 	my $properties = $self->{object_type_config}->{properties};
 	
-	foreach my $k ( keys %{$properties}, 'description' ) {
+	foreach my $k ( keys %{$properties}, 'description', 'save_filter_cmd' ) {
 		$meta_href->{$k} = $q->param($k);
 	}
 	
-	# now save the stuff
-	$self->save_meta_data ($meta_href);
+	my $error = $self->check_properties ($meta_href);
 
-	$self->object_header ('save properties');
+	if ( not $error ) {
+		$self->save_meta_data ($meta_href);
 
-	print <<__HTML;
+		print <<__HTML;
 $CFG::FONT
 <b>Properties succesfully saved.</b>
 </FONT>
 <p>
 __HTML
-
-	$self->create_history_file;
-	$self->install;
+		$self->create_history_file;
+		$self->install;
+	} else {
+		print <<__HTML;
+$CFG::FONT
+<b>ERROR:</b><br>
+$error
+<p>
+<b><font color="red">Properties not saved</font>. Please correct errors first.</b>
+</FONT>
+<p>
+__HTML
+	}
 	
 	NewSpirit::end_page();
 }
@@ -1650,7 +1736,7 @@ sub save_meta_data {
 	my %meta;	# this is the hash for the .m file
 
 	my $properties = $self->{object_type_config}->{properties};
-	foreach my $k ( keys %{$properties}, 'description' ) {
+	foreach my $k ( keys %{$properties}, 'description', 'save_filter_cmd' ) {
 		$meta{$k} = $meta_href->{$k};
 		$hash{$k} = $meta_href->{$k};
 	}
@@ -1683,13 +1769,13 @@ sub create_history_file {
 	
 	my $files_lref = $self->get_history_files;
 	
-	my $last_number = pop @{$files_lref} || 0;
+	my $last_number = $files_lref->[@{$files_lref}-1] || 0;
 	++$last_number;
 
 	my $object_file = $self->{object_file};
 	my $history_object_file = "$history_dir/$last_number";
-	my $history_meta_file = "$history_dir/$last_number.m";
-	my $history_tag_file = "$history_dir/$last_number.t";
+	my $history_meta_file   = "$history_dir/$last_number.m";
+	my $history_tag_file    = "$history_dir/$last_number.t";
 	
 	copy ($object_file, $history_object_file);
 	my $meta_href = $self->get_meta_data;
@@ -1706,6 +1792,26 @@ sub create_history_file {
 			or croak "can't write $history_tag_file";
 		print $fh "$modification_tag\n";
 		close $fh;
+	}
+	
+	# now check if maximum history size is reached
+
+	my $o = new NewSpirit::Object (
+		q => $self->{q},
+		object => $CFG::default_base_conf,
+	);
+	my $data = $o->get_data;
+
+	my $max = $data->{base_history_size} || $CFG::default_history_size;
+	
+	if ( @{$files_lref}+1 > $max ) {
+		# ok, too much stuff here
+		splice (@{$files_lref}, -$max+1);
+		foreach my $f ( @{$files_lref} ) {
+			unlink "$history_dir/$f";
+			unlink "$history_dir/$f.m";
+			unlink "$history_dir/$f.t";
+		}
 	}
 	
 	1;
@@ -2849,7 +2955,7 @@ __HTML
 
 	if ( $i_depend_on ) {
 		my $new_level = $depends_on_level + 1;
-		print   "$CFG::FONT<b>This object depends on:</b>\n";
+		print   "$CFG::FONT<b>This object requires:</b>\n";
 		print "<br>\n";
 		print qq{( <b><a href="$self->{object_url}&e=dependencies&window=1&depends_on_level=$new_level">INCREASE</a></b>\n};
 		print "or\n";
@@ -2877,7 +2983,7 @@ __HTML
 
 	if ( $my_dependants ) {
 		my $new_level = $dependants_level + 1;
-		print "$CFG::FONT<b>These objects depend on $self->{object_name}:</b>";
+		print "$CFG::FONT<b>These objects require $self->{object_name}:</b>";
 		print "<br>\n";
 		print qq{( <b><a href="$self->{object_url}&e=dependencies&window=1&dependants_level=$new_level">INCREASE</a></b>\n};
 		print "or\n";
@@ -3611,6 +3717,92 @@ sub print_depend_install_message {
 	my $self = shift;
 	
 	print "<p>$CFG::FONT<b>Dependency processing</b></FONT><p>";
+}
+
+#---------------------------------------------------------------------
+# canonify_object_name - Canonifies dotted object name notation
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->canonify_object_name ($object_name)
+#
+# DESCRIPTION:
+#	Replaces the project part of the given object name with
+#	the project of this instance.
+#---------------------------------------------------------------------
+
+sub canonify_object_name {
+	my $self = shift;
+	
+	my ($object) = @_;
+	
+	my $project = $self->{project};
+	
+	$object =~ s/^[^\.]+/$project/;
+	
+	return $object;
+}
+
+#---------------------------------------------------------------------
+# check_properties - Checks if the given object properties are correct
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$error = $self->check_properties ( $meta_href )
+#
+# DESCRIPTION:
+#	This method returns an error message, if the given property
+#	data is not valid for this object. Returns nothing by default
+#	and can be implemented by object type specifiy subclasses.
+#---------------------------------------------------------------------
+
+sub check_properties {
+	my $self = shift;
+	
+	return;
+}
+
+#---------------------------------------------------------------------
+# get_object_src_file - returns the source file to a given object name
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$object_src_file = $self->get_object_src_file ($object_name)
+#
+# DESCRIPTION:
+#	The $object_name (dotted notation) is translated to the
+#	object source file. If the object does not exist, undef
+#	will be returned
+#---------------------------------------------------------------------
+
+sub get_object_src_file {
+	my $self = shift;
+	
+	my ($object_name) = @_;
+
+	my $src_file = $object_name;
+
+	$src_file =~ s/^[^\.]+\.//;
+	$src_file =~ s!\.!/!g;
+	
+	$src_file = "$self->{project_src_dir}/$src_file";
+	
+	my $dir  = dirname $src_file;
+	my $file = basename $src_file;
+
+#	print "object=$object_name dir=$dir file=$file<p>\n";
+	
+	my $filenames_lref = NewSpirit::filename_glob (
+		dir => $dir,
+		regex => "^$file\\.[^\.]+\$",
+	);
+	
+#	NewSpirit::dump($filenames_lref);
+	
+	if ( @{$filenames_lref} > 1 ) {
+		die "object name '$object_name' is ambigious";
+	} elsif ( not @{$filenames_lref} ) {
+		return;
+	}
+	
+	return $filenames_lref->[0];
 }
 
 1;

@@ -1,6 +1,6 @@
 #!/usr/local/perl/5.004_04/bin/perl
 
-# $Id: install.pl,v 1.5 2001/02/06 15:10:10 joern Exp $
+# $Id: install.pl,v 1.6 2001/03/14 11:06:23 joern Exp $
 
 require 5.004_04;
 
@@ -258,7 +258,7 @@ sub check_manifest {
 	
 	if ( @missing ) {
 		message_not_ok();
-		print "\n\nThe folowing files are missing:\n\n";
+		print "\n\nThe following files are missing:\n\n";
 		print "\t", join ("\t\n", @missing), "\n\n";
 		exit 1;
 	} else {

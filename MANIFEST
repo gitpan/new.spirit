@@ -109,6 +109,9 @@ tmpl/cipp.template
 tmpl/cipp.meta
 tmpl/cipp-inc.template
 tmpl/cipp-inc.meta
+tmpl/cipp-base-config.template
+tmpl/cipp-sql.meta
+tmpl/cipp-sql.template
 tools
 usertmpl
 usertools
@@ -119,5 +122,7 @@ var/users
 lib/NewSpirit/SqlShell
 lib/NewSpirit/SqlShell/HTML.pm
 lib/NewSpirit/SqlShell/Text.pm
+cpan
+cpan/CIPP.pm
 perlmodules
-perlmodules/CIPP-2.28.tar.gz
+perlmodules/CIPP-2.30.tar.gz

@@ -1,4 +1,4 @@
-# $Id: Prep.pm,v 1.14 2001/02/28 16:55:06 joern Exp $
+# $Id: Prep.pm,v 1.15 2001/03/23 14:34:56 joern Exp $
 
 package NewSpirit::CIPP::Prep;
 
@@ -25,7 +25,8 @@ sub get_meta_data {
 	
 	my $meta = $self->SUPER::get_meta_data;
 	
-	if ( not defined $meta->{use_strict} ) {
+	if ( exists $meta->{use_strict} and
+	     not defined $meta->{use_strict} ) {
 		# uh oh, not defined, that is bad :(
 		# Default is USE STRICT !!! ;)
 		$meta->{use_strict} = 1;

@@ -1,4 +1,4 @@
-# $Id: Base.pm,v 1.16 2001/03/05 16:49:48 joern Exp $
+# $Id: Base.pm,v 1.20 2001/03/23 14:34:56 joern Exp $
 
 package NewSpirit::CIPP::Base;
 
@@ -59,19 +59,23 @@ my %FIELD_DEFINITION = (
 			       'your local development system)<b>',
 		type => 'text',
 	},
+	base_history_size => {
+		description => "Object history limit (Default $CFG::default_history_size)",
+		type => 'text 4',
+	},
 );
 
 my @FIELD_ORDER_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_error_show',
 	'base_error_text', 'base_http_header', 'base_perl_lib_dir',
-	'base_default_db'
+	'base_default_db', 'base_history_size',
 );
 
 my @FIELD_ORDER_NON_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_error_show',
 	'base_error_text', 'base_http_header',  'base_perl_lib_dir',
 	'base_default_db', 'base_install_dir', 'base_prod_root_dir',
-#'base_prod_shebang',
+	'base_prod_shebang',
 );
 use Carp;
 use NewSpirit::Object::Record;
@@ -174,6 +178,7 @@ sub install_file {
 	my $http_header = "( ";
 	foreach my $line (split (/\n/, $data->{base_http_header})) {
 		my ($key, $value) = split (/\s+/, $line, 2);
+		$key =~ s/:$//;
 		$key =~ s/'/\\'/g;
 		$value =~ s/'/'\\'/g;
 		$http_header .= "'$key' => '$value', ";
@@ -207,7 +212,10 @@ sub install_file {
 		if ( $data->{base_prod_root_dir} ) {
 			$prod_dir = "$data->{base_prod_root_dir}/prod";
 		} else {
-			$prod_dir = $self->{project_prod_dir};
+			$prod_dir = NewSpirit::Object->new (
+				q => $self->{q},
+				object => $CFG::default_base_conf
+			)->{project_prod_dir};
 		} 
 
 		my $cipp_project = $self->{project};
@@ -284,7 +292,7 @@ sub create {
 	my $df = new NewSpirit::DataFile ($file);
 	my $data;
 	eval {
-		# existence of the file is optional
+		# existence of the file is not mandatory
 		$data = $df->read;
 	};
 	$data->{$self->{object}} = 1;

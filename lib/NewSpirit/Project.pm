@@ -1,4 +1,4 @@
-# $Id: Project.pm,v 1.15 2001/02/19 15:24:35 joern Exp $
+# $Id: Project.pm,v 1.17 2001/03/23 14:34:56 joern Exp $
 
 package NewSpirit::Project;
 
@@ -8,6 +8,7 @@ use strict;
 use Carp;
 use File::Basename;
 use File::Path;
+use File::Copy;
 use NewSpirit::Object;
 use NewSpirit::Widget;
 use NewSpirit::Passwd;
@@ -526,16 +527,6 @@ __HTML
 		chmod 0775, "$data{root_dir}/src";
 	}
 
-	# touch base configuration, if not existant
-	my $base_conf_file = "$data{root_dir}/src/$CFG::default_base_conf";
-	if ( not -f $base_conf_file ) {
-		open (BASE, "> $base_conf_file");
-		close BASE;
-		chmod 0664, $base_conf_file;
-	}
-
-	chmod 0664, $base_conf_file;
-
 	# Create project configuration
 	print "$CFG::FONT Creating project configuration file...</FONT><br>\n";
 
@@ -571,6 +562,22 @@ __HTML
 		username => $username,
 		project_lref => [ $data{project_name} ]
 	);
+
+	# create base configuration, if not existant
+	my $base_conf_file = "$data{root_dir}/src/$CFG::default_base_conf";
+	if ( not -f $base_conf_file ) {
+		my $template_file = "$CFG::user_template_dir/cipp-base-config.template";
+		   $template_file = "$CFG::template_dir/cipp-base-config.template"
+			if not -f $template_file;
+		if ( not -f $template_file ) {
+			open (BASE, "> $base_conf_file");
+			close BASE;
+		} else {
+			copy ($template_file, $base_conf_file);
+		}
+	}
+
+	chmod 0664, $base_conf_file;
 
 	print qq[<script>function select_project () {],
 	      qq[window.opener.parent.CONTROL.location.href=],
@@ -1038,12 +1045,13 @@ sub property_widget_base_config {
 			-labels => \%labels
 		);
 
-		print qq{<a href="$CFG::admin_url?project=$project&ticket=$ticket&e=project_refresh_base_configs_popup"><b>Refresh Base Configs Popup</b></a>},
 	} else {
 		print qq{<input type="hidden" name="install_possible" value="0">\n};
-		print "No additional configuration objects found!\n";
+		print "No additional configuration objects found!<br>\n";
 	}
 
+	print qq{<a href="$CFG::admin_url?project=$project&ticket=$ticket&e=project_refresh_base_configs_popup"><b>Refresh Base Configs Popup</b></a>},
+	
 	1;	
 }
 

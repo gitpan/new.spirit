@@ -1,4 +1,4 @@
-# $Id: Install.pm,v 1.14 2001/03/05 16:49:48 joern Exp $
+# $Id: Install.pm,v 1.17 2001/03/16 15:46:36 joern Exp $
 
 package NewSpirit::Object::Install;
 
@@ -383,10 +383,13 @@ sub install_project_ctrl {
 
 	print "$CFG::FONT_FIXED<BLOCKQUOTE>\n";
 	$mangled_default_base_conf->install_dependant_objects;
-	print "</FONT></BLOCKQUOTE>\n";
+	print "</BLOCKQUOTE></FONT>\n";
 
 	# and replace objects
 	print "<p><b>Replace objects in production tree, where configured...</b><p>\n";
+
+	print "<script>self.window.scroll(0,5000000)</script>\n";
+	print "<script>self.window.scroll(0,5000000)</script>\n";
 
 	chdir $project_src_dir;
 
@@ -408,27 +411,52 @@ sub install_project_ctrl {
 
 #	use Data::Dumper;print "<pre>", Dumper(\@prod_replace_candidates), "</pre>\n";
 	
-	print "<BLOCKQUOTE>\n";
+	print "$CFG::FONT_FIXED<BLOCKQUOTE>\n";
+	my %replaced_objects;
 	foreach my $candidate ( @prod_replace_candidates ) {
-		print "$candidate... ";
+
 		my $o = new NewSpirit::Object (
 			q => $q,
 			object => $candidate,
 			base_config_object => $base_config
 		);
-		$o->replace_target_prod_file;
+		my $target_object_name = $o->replace_target_prod_file;
 		$o->install_file;
-		print "<FONT COLOR=green><B>OK</B></FONT><br>\n";
-		print "<script>self.window.scroll(0,5000000)</script>\n";
-		print "<script>self.window.scroll(0,5000000)</script>\n";
+
+		if ( $target_object_name ) {
+			if ( $replaced_objects{$target_object_name} ) {
+				print "<font color=red><b>WARNING:<br>$target_object_name ",
+				      "already replaced by ",
+				      $replaced_objects{$target_object_name},
+				      "</b></font><br>\n";
+			} else {
+				$replaced_objects{$target_object_name} = $candidate;
+			}
+
+			print "<script>self.window.scroll(0,5000000)</script>\n";
+			print "<script>self.window.scroll(0,5000000)</script>\n";
+		}
 	}
-	print "</BLOCKQUOTE>\n";
+	print "</BLOCKQUOTE></FONT>\n";
 
 	# build static dbshell.pl
 
 	$self->build_static_dbshell (
 		target_file => "$install_prod_dir/dbshell.pl"
 	);
+
+	# shebang replace?
+	if ( $self->{project_base_config_data}->{base_prod_shebang} ) {
+		print "<p><b>Replacing shebang line of Perl programs...</b><p>\n";
+
+		print "<script>self.window.scroll(0,5000000)</script>\n";
+		print "<script>self.window.scroll(0,5000000)</script>\n";
+
+		$self->replace_shebang (
+			shebang => $self->{project_base_config_data}->{base_prod_shebang},
+			dir     => $install_prod_dir
+		);
+	}		
 
 	print "<p><b>Installation complete!</b>\n";
 
@@ -438,6 +466,43 @@ sub install_project_ctrl {
 	print "<script>self.window.scroll(0,5000000)</script>\n";
 
 	NewSpirit::end_page();
+}
+
+sub replace_shebang {
+	my $self = shift;
+	
+	my %par = @_;
+	
+	my ($shebang, $dir) = @par{'shebang', 'dir'};
+
+	$shebang = "#!$shebang" if $shebang !~ /^#!/;
+
+	find (
+		sub {
+			my $dir  = $File::Find::dir;
+			my $file = $_;
+			return if $file !~ /\.(cgi|pl)$/;
+			my $filename = "$dir/$file";
+			
+			open (IN, $filename)
+				or die "can't read $filename";
+			my $text = join '', <IN>;
+			close IN;
+			
+			my ($atime, $mtime) = (stat $filename)[8,9];
+			$text =~ s/^#\!.*perl/$shebang/;
+			
+			open (OUT, ">$filename")
+				or die "can't write $filename";
+			print OUT $text;
+			close OUT;
+			
+			utime $atime, $mtime, $filename;
+		},
+		$dir
+	);
+
+	1;
 }
 
 sub build_static_dbshell {

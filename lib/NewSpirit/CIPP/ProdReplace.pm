@@ -1,4 +1,4 @@
-# $Id: ProdReplace.pm,v 1.3 2001/02/14 16:53:00 joern Exp $
+# $Id: ProdReplace.pm,v 1.4 2001/03/12 11:15:19 joern Exp $
 
 package NewSpirit::CIPP::ProdReplace;
 
@@ -147,7 +147,7 @@ sub get_install_object_name {
 	
 	if ( $prop->{target_config} eq $self->{project_base_conf} and
 	     $prop->{replace_object} ) {
-		return $prop->{replace_object};
+		return $self->canonify_object_name ($prop->{replace_object});
 	}
 	
 	return $self->{object_name};
@@ -159,15 +159,14 @@ sub replace_target_prod_file {
 	my $object_name = $self->get_install_object_name;
 
 	if ( $object_name ne $self->{object_name} ) {
-		print "<FONT COLOR=red>";
-	     	print "<b> replaces '$object_name' </b>";
-		print "</font>\n";
+		print "$self->{object_name} replaces $object_name ... ";
+		print "<FONT COLOR=green><B>OK</B></FONT><br>\n";
 		$self->install_file;
+		
+		return $object_name;
 	} else {
-		print "no replace action defined <font color=green><b>SKIPPED</b> - </font>\n";
+		return;
 	}
-	
-	1;
 }
 
 sub installation_allowed {
@@ -188,6 +187,24 @@ sub installation_allowed {
 	
 #	print STDERR "$self->{object_name}: NO install\n";
 	0;
+}
+
+sub check_properties {
+	my $self = shift;
+	
+	my ($meta) = @_;
+	
+	return if not $meta->{replace_object};
+	
+	my $filename = $self->get_object_src_file ( $meta->{replace_object} );
+	
+	if ( not $filename ) {
+		return "Replace object '$meta->{replace_object}' does not exist!";
+	} else {
+		return;
+	}
+	
+	return;
 }
 
 1;
