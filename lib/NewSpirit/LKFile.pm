@@ -1,5 +1,5 @@
 
-# $Id: LKFile.pm,v 1.5 2001/07/24 15:35:26 joern Exp $
+# $Id: LKFile.pm,v 1.6 2003/05/19 13:41:59 joern Exp $
 
 package NewSpirit::LKFile;
 
@@ -30,6 +30,7 @@ sub read {
 	my $fh = new FileHandle;
 	open ($fh, $filename) or confess "can't read $filename";
 	binmode $fh;
+
 	flock $fh, LOCK_SH or croak "can't share lock $filename";
 	my $data = join ('', <$fh>);
 	close $fh;

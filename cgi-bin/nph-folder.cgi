@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: nph-folder.cgi,v 1.8.2.2 2001/11/23 11:18:09 joern Exp $
+# $Id: nph-folder.cgi,v 1.9 2002/04/08 12:17:35 joern Exp $
 
 use strict;
 BEGIN {

@@ -1,8 +1,7 @@
-# $Id: Include.pm,v 1.13.2.1 2002/04/09 08:56:03 joern Exp $
+# $Id: Include.pm,v 1.23 2002/08/30 10:11:39 joern Exp $
 
 package NewSpirit::CIPP::Include;
 
-$VERSION = "0.01";
 @ISA = qw(
 	NewSpirit::CIPP::Prep
 );
@@ -12,7 +11,8 @@ use Carp;
 use NewSpirit::CIPP::Prep;
 use NewSpirit::PerlCheck;
 use File::Basename;
-use CIPP;
+use CIPP::Compile::NewSpirit;
+use IO::String;
 
 sub convert_meta_from_spirit1 {
 	my $self = shift;
@@ -27,114 +27,90 @@ sub convert_meta_from_spirit1 {
 sub get_install_filename {
 	my $self = shift;
 	
-	# actually no file is installed, this may change in future,
-	# when preprocessed Includes may be cached in the filesystem
+	my $rel_path = "$self->{object_rel_dir}/$self->{object_basename}";
 	
-	return;
+	$rel_path =~ s/\.[^\.]+$//;
+	my $path = "$self->{project_inc_dir}/$rel_path.code";
+	
+	$path =~ s!/+!/!g;
+	
+	return $path;
 }
 
 sub install_file {
 	my $self = shift;
 
-	my $meta = $self->get_meta_data;
-
-	# read database hash (old style notation, for CIPP)
-	my $databases_href = $self->get_old_style_databases;
-
-	# determine default DB (old style notation, for CIPP)
-	my $default_db = $self->get_old_style_default_database;
-	
-	# determine MIME Type and 'use strict' mode
-	my $mime_type = $meta->{mime_type};
-	my $use_strict = $meta->{use_strict};
-	
-	# this is for the generated Perl code
-	my $perl_code;
-
-	my $fh = new FileHandle;
-
 	my $ok = 1;
 	$self->{install_errors} = {};
 
-	if ( open ($fh, "< $self->{object_file}") ) {
-		my $CIPP = new CIPP (
-			$fh, \$perl_code,
-			{
-				$self->{project} => "$self->{project_root_dir}/src"
-			},
-			$databases_href,
-			$mime_type, $default_db, $self->{object_name},
-			undef, 1, 'cipp',
-			$use_strict, 0, undef,
-			$self->{project},
-			1, 'EN'
-		);
+	my $CIPP = CIPP::Compile::NewSpirit->new (
+		program_name  	=> $self->{object_name},
+		project 	=> $self->{project},
+		start_context 	=> 'html',
+		object_type   	=> 'cipp-inc',
+		project_root  	=> $self->{project_root_dir},
+		lib_path        => $self->{project_base_config_data}
+				        ->{base_perl_lib_dir},
+		url_par_delimiter => $self->{project_base_config_data}
+				        ->{base_url_par_delimiter},
+	);
 
-		# was CIPP initialization OK?
+	my $had_cached_error = -f $CIPP->get_err_filename;
 
-		if ( !$CIPP->Get_Init_Status ) {
-			push @{$self->{install_errors}->{other}},
-			     "Unable to initialize CIPP preprocessor!";
-			return;
-		}
+	$CIPP->process();
 
-		# a Inclde needs no CGI or Database header code
-		$CIPP->Set_Write_Script_Header(0);
+	my $interface_changed = $CIPP->get_interface_changed;
 
-		# preprocess the Include
-		$CIPP->Preprocess();
+	# THIS DOES NOT WORK! The $had_cached_error only reports
+	# if our object had a *direct* error. But we need also
+	# the information, if a preliminary dependency installation
+	# reported errors for dependent objects!
 
-		close $fh;
+	$self->{_cipp_include_dep_inst_needed} = 1;
+		# $had_cached_error || $interface_changed;
 
-		# update dependencies
-		$self->build_module_dependencies($CIPP);
-		my $dependencies = $CIPP->Get_Direct_Used_Objects;
-		$self->update_dependencies ( $dependencies );
+#	print $CIPP->get_cache_ok ? " 1 " : " 0 ";
 
-		if ( ! $CIPP->Get_Preprocess_Status ) {
-			# uh oh, errors! ;)
-			$ok = 0;
-			# if we are in a dependency installation, we
-			# only give a brief list of the errors, and no
-			# error highlighted version of the source code
-			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
-				$self->{install_errors}->{unformatted}
-					= $CIPP->Get_Messages;
-			} else {
-				$self->{install_errors}->{formatted}
-					= $CIPP->Format_Debugging_Source;
-			}
-		}
-	} else {
+	return 2 if $CIPP->get_cache_ok and not $CIPP->has_errors;
+
+	# update dependencies
+	$self->build_module_dependencies ( $CIPP );
+	$self->update_dependencies ( $CIPP->get_used_objects );
+
+	if ( $CIPP->has_errors ) {
 		$ok = 0;
-		push @{$self->{install_errors}->{other}},
-			"Can't read '$self->{object_file}'!";
+		# if we are in a dependency installation, we
+		# only give a brief list of the errors, and no
+		# error highlighted version of the source code
+		if ( $self->{dependency_installation} ) {
+			if ( $CIPP->has_direct_errors ) {
+				$self->{install_errors}->{unformatted}
+					= $CIPP->get_messages;
+			} else {
+				$ok = -1;
+			}
+		} else {
+			$self->{install_errors}->{formatted}
+				= $CIPP->format_debugging_source (
+					brief => $self->{command_line_mode}
+				);
+		}
+
+#		my $perl_code_sref = $CIPP->get_perl_code_sref;
+#		open (OUT, "> /tmp/cippdebug");
+#		print OUT $$perl_code_sref;
+#		close OUT;
 	}
+
+#	$self->{_perl_code} = $CIPP->get_perl_code_sref;
 
 	return $ok;
 }
 
-sub print_post_install_message {
+sub dependency_installation_needed {
 	my $self = shift;
-	
-	print "<p>$CFG::FONT",
-	      "<b>Include successfully preprocessed.</b>",
-	      "</FONT><p>\n";
-
-	1;
+	return 1;
+	return $self->{_cipp_include_dep_inst_needed};
 }
-
-#sub get_dependant_objects {
-#	my $self = shift;
-#
-#	my $depend = $self->get_depend_object;
-#	
-#	my %result;
-#	$depend->get_dependants_resolved (
-#		"$self->{object}:$self->{object_type}", \%result
-#	);
-#	
-#	return \%result;
-#}
 
 1;

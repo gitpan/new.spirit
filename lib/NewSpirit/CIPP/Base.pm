@@ -4,6 +4,7 @@ $VERSION = "0.01";
 @ISA = qw( NewSpirit::Object::Record );
 
 use strict;
+use CIPP;
 
 my %FIELD_DEFINITION = (
 	base_doc_url => {
@@ -43,6 +44,11 @@ my %FIELD_DEFINITION = (
 			       '(Colon delimited)',
 		type => 'text'
 	},
+	base_add_prod_dir => {
+		description => 'Additional CIPP Project prod Directories<br>'.
+			       '(for Include and Module access - Colon delimited)',
+		type => 'text'
+	},
 	base_install_dir => {
 		description => 'Local Installation Directory</b><br>'.
 			       '(relative to local project root directory, '.
@@ -71,6 +77,14 @@ my %FIELD_DEFINITION = (
 			       'in dotted notation, right: corresponding shebang line)',
 		type => 'textarea',
 	},
+	base_url_par_delimiter => {
+		description => 'Delimiter for CGI parameters',
+		type => [ '&', ';' ],
+	},
+	base_utf8 => {
+		description => 'Use UTF8 character set',
+		type => "switch",
+	},
 	_base_project => {
 		type => 'text',
 	},
@@ -82,13 +96,18 @@ my %FIELD_DEFINITION = (
 my @FIELD_ORDER_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_server_name', 'base_error_show',
 	'base_error_text', 'base_http_header', 'base_perl_lib_dir',
-	'base_default_db', 'base_history_size', '_base_project', '_base_server',
+	'base_add_prod_dir',
+	'base_default_db', 'base_url_par_delimiter', 'base_utf8',
+	'base_prod_shebang',
+	'base_history_size', '_base_project', '_base_server',
 );
 
 my @FIELD_ORDER_NON_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_error_show',
 	'base_error_text', 'base_http_header',  'base_perl_lib_dir',
-	'base_default_db', 'base_install_dir', 'base_prod_root_dir',
+	'base_add_prod_dir',
+	'base_default_db', 'base_url_par_delimiter', 'base_utf8',
+	'base_install_dir', 'base_prod_root_dir',
 	'base_prod_shebang', 'base_prod_shebang_map',
 );
 use Carp;
@@ -186,10 +205,12 @@ sub get_install_filename {
 sub install_file {
 	my $self = shift;
 	
+	return 2 if $self->is_uptodate;
+
 	my $data = $self->get_data;
 	
 	# setup http header hash
-	my $http_header = "( ";
+	my $http_header = "{ ";
 	foreach my $line (split (/\n/, $data->{base_http_header})) {
 		my ($key, $value) = split (/\s+/, $line, 2);
 		$key =~ s/:$//;
@@ -197,7 +218,7 @@ sub install_file {
 		$value =~ s/'/'\\'/g;
 		$http_header .= "'$key' => '$value', ";
 	}
-	$http_header .= ")";
+	$http_header .= "}";
 
 	my $fh = new FileHandle;
 	my $install_file = $self->get_install_filename;
@@ -212,65 +233,83 @@ sub install_file {
 	$base_doc_url = "" if $base_doc_url eq '/';
 	$base_cgi_url = "" if $base_cgi_url eq '/';
 
-	my $perl_lib_code;
-#	if ( $data->{base_perl_lib_dir} ) {
-#		$perl_lib_code = "unshift (\@INC, '$data->{base_perl_lib_dir}');\n";
-#	}
+	my $base_url_par_delimiter = $data->{base_url_par_delimiter} || '&';
+	my $base_utf8 = $data->{base_utf8} || 0;
 
-	my $base_perl_lib_dir = $data->{base_perl_lib_dir};
-	$base_perl_lib_dir =~ s/:/ /g;
+	my $error_show = $data->{base_error_show};
+	my $error_text = $data->{base_error_text};
+	$error_text =~ s/\{/\\{/g;
+	$error_text =~ s/\}/\\}/g;
 
         if ( $self->{object} ne 'configuration.cipp-base-config' ) {
 		# ok, we are an alternate base configuration
 		my $prod_dir;
+
+		my $base_conf = NewSpirit::Object->new (
+			q => $self->{q},
+			object => $CFG::default_base_conf
+		);
+
+		my $base_perl_lib_dir = $base_conf->get_data->{base_perl_lib_dir};
+		$base_perl_lib_dir =~ s/:/ /g;
+		my $base_add_prod_dir = $base_conf->get_data->{base_add_prod_dir};
+		$base_add_prod_dir =~ s/:/ /g;
+
 		if ( $data->{base_prod_root_dir} ) {
 			$prod_dir = "$data->{base_prod_root_dir}/prod";
 		} else {
-			$prod_dir = NewSpirit::Object->new (
-				q => $self->{q},
-				object => $CFG::default_base_conf
-			)->{project_prod_dir};
+			$prod_dir = $base_conf->{project_prod_dir};
 		} 
 
 		my $cipp_project = $self->{project};
 
 		print $fh <<__EOF;
-package CIPP_Exec;
-\$cipp_project     = '$cipp_project';
-\$cipp_cgi_url     = '$base_cgi_url';
-\$cipp_doc_url     = '$base_doc_url';
-\$cipp_cgi_dir     = '$prod_dir/cgi-bin';
-\$cipp_lib_dir     = '$prod_dir/lib';
-\$cipp_doc_dir     = '$prod_dir/htdocs';
-\$cipp_config_dir  = '$prod_dir/config';
-\$cipp_sql_dir     = '$prod_dir/sql';
-\$cipp_log_file    = '$prod_dir/logs/cipp.log';
-\$cipp_error_show  = '$data->{base_error_show}';
-\$cipp_error_text  = q{$data->{base_error_text}};
-\$cipp_url         = \$cipp_cgi_url;
-\%cipp_http_header = $http_header;
-\@cipp_perl_lib_dir = qw($base_perl_lib_dir);
-1;
+{
+	prod_dir	=> '$prod_dir',
+	config_dir	=> '$prod_dir/config',
+	inc_dir		=> '$prod_dir/inc',
+	lib_dir		=> '$prod_dir/lib',
+	log_dir		=> '$prod_dir/log',
+	log_file	=> '$prod_dir/log/cipp.log',
+	cgi_url		=> '$base_cgi_url',
+	doc_url		=> '$base_doc_url',
+	add_lib_dirs    => [ qw($base_perl_lib_dir) ],
+	add_prod_dirs   => [ qw($base_add_prod_dir) ],
+	http_header     => $http_header,
+	error_show	=> $error_show,
+	error_text	=> qq{$error_text},
+	cipp_compiler_version => '$CIPP::VERSION',
+ 	url_par_delimiter => '$base_url_par_delimiter',
+	utf8		=> $base_utf8,
+}
 __EOF
 	} else {
 		# standard development environment
+
+		my $base_perl_lib_dir = $data->{base_perl_lib_dir};
+		$base_perl_lib_dir =~ s/:/ /g;
+		my $base_add_prod_dir = $data->{base_add_prod_dir};
+		$base_add_prod_dir =~ s/:/ /g;
+
 		print $fh <<__EOF;
-package CIPP_Exec;
-\$cipp_project     = '$self->{project}';
-\$cipp_cgi_url     = '$base_cgi_url';
-\$cipp_doc_url     = '$base_doc_url';
-\$cipp_cgi_dir     = '$self->{project_cgi_base_dir}';
-\$cipp_lib_dir     = '$self->{project_lib_dir}';
-\$cipp_doc_dir     = '$self->{project_htdocs_base_dir}';
-\$cipp_config_dir  = '$self->{project_config_dir}';
-\$cipp_sql_dir     = '$self->{project_sql_dir}';
-\$cipp_log_file    = '$self->{project_log_file}';
-\$cipp_error_show  = '$data->{base_error_show}';
-\$cipp_error_text  = q{$data->{base_error_text}};
-\$cipp_url         = \$cipp_cgi_url;
-\%cipp_http_header = $http_header;
-\@cipp_perl_lib_dir = qw($base_perl_lib_dir);
-1;
+{
+	prod_dir	=> '$self->{project_prod_dir}',
+	config_dir	=> '$self->{project_config_dir}',
+	inc_dir		=> '$self->{project_inc_dir}',
+	lib_dir		=> '$self->{project_lib_dir}',
+	log_dir		=> '$self->{project_log_dir}',
+	log_file	=> '$self->{project_log_file}',
+	cgi_url		=> '$base_cgi_url',
+	doc_url		=> '$base_doc_url',
+	add_lib_dirs    => [ qw($base_perl_lib_dir) ],
+	add_prod_dirs   => [ qw($base_add_prod_dir) ],
+	http_header     => $http_header,
+	error_show	=> $error_show,
+	error_text	=> qq{$error_text},
+	cipp_compiler_version => '$CIPP::VERSION',
+ 	url_par_delimiter => '$base_url_par_delimiter',
+	utf8		=> $base_utf8,
+}
 __EOF
 	}
 	close $fh;
@@ -357,6 +396,10 @@ sub save_file {
 	$q->param ('_base_server',  "http://$ENV{SERVER_NAME}$CFG::cgi_url");
 
 	$self->SUPER::save_file;
+}
+
+sub print_install_errors {
+	NewSpirit::CIPP::Prep::print_install_errors(@_);
 }
 
 1;

@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: mktardist.pl,v 1.9 2001/07/24 15:35:26 joern Exp $
+# $Id: mktardist.pl,v 1.10 2001/10/26 08:17:42 joern Exp $
 
 use strict;
 use File::Find;
@@ -139,7 +139,11 @@ sub create_conf_template {
 		root_dir => '',
 		cgi_url => '/cgi-bin2',
 		htdocs_url => '/newspirit2',
-		db_module => ''
+		db_module => '',
+		ldap_enable => 0,
+		ldap_server => 'ldap',
+		ldap_base => 'o=dimedis.de',
+		ldap_uid => 'uid',
 	);
 	
 	while (<FROM>) {

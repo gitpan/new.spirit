@@ -1,18 +1,18 @@
-# $Id: Config.pm,v 1.10 2001/03/12 11:15:19 joern Exp $
+# $Id: Config.pm,v 1.13 2003/01/30 16:25:50 joern Exp $
 
 package NewSpirit::CIPP::Config;
 
 $VERSION = "0.01";
 @ISA = qw(
-	NewSpirit::CIPP::ProdReplace
 	NewSpirit::CIPP::Prep
+	NewSpirit::CIPP::ProdReplace
 );
-
+#
 use strict;
 use Carp;
 use NewSpirit::CIPP::Prep;
 use NewSpirit::CIPP::ProdReplace;
-use NewSpirit::PerlCheck;
+use CIPP::Compile::PerlCheck;
 use File::Basename;
 use FileHandle;
 
@@ -43,25 +43,31 @@ sub print_pre_install_message {
 sub install_file {
 	my $self = shift;
 
-	return 1 if not $self->installation_allowed;	# prod replace
+	my $prod_replace;
+	return 1 if not $prod_replace = $self->installation_allowed;	# prod replace
+	return 2 if $prod_replace != 2 and $self->is_uptodate;
 
 	my $perl_code_sref = $self->get_data;
 
 	# check Perl syntax
 	$$perl_code_sref = "no strict;\n".$$perl_code_sref;
 
-	my $perl_errors = $self->check_for_perl_errors (
-		dirname => $self->{project_config_dir},
-		perl_code_sref => $perl_code_sref,
+	my $pc = CIPP::Compile::PerlCheck->new (
+		directory => $self->{project_config_dir}
+	);
+	
+	my $error_sref = $pc->check (
+		code_sref    => $perl_code_sref,
+		parse_result => 0,
 	);
 
 	$self->{install_errors} = {};
 	my $ok = 1;
-	if ( $perl_errors ) {
+	if ( $error_sref ) {
 		# uh, oh, errors! :))
 		$ok = 0;
 
-		$self->{install_errors}->{perl_unformatted} = \$perl_errors;
+		$self->{install_errors}->{perl_unformatted} = \$error_sref;
 
 	} else {
 		# OK, let's install the config file

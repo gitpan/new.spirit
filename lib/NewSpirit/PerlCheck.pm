@@ -1,4 +1,4 @@
-# $Id: PerlCheck.pm,v 1.4.2.1 2003/04/04 09:41:20 joern Exp $
+# $Id: PerlCheck.pm,v 1.7 2001/10/18 13:03:47 joern Exp $
 
 package NewSpirit::PerlCheck;
 
@@ -8,7 +8,6 @@ use strict;
 use Carp;
 use FileHandle;
 use IPC::Open2;
-use Config;
 
 sub new {
 	my $type = shift;
@@ -20,7 +19,7 @@ sub new {
 	
 #	print STDERR "$$: open2 $CFG::perlcheck_program\n";
 
-	open2 ($fh_read, $fh_write, "$Config{perlpath} $CFG::perlcheck_program")
+	open2 ($fh_read, $fh_write, "perl $CFG::perlcheck_program")
 		or croak "can't call open2($CFG::perlcheck_program)";
 	
 	my $self = {
@@ -34,8 +33,14 @@ sub new {
 
 sub set_directory {
 	my $self = shift;
-	
 	$self->{directory} = $_[0];
+	1;
+}
+
+sub set_lib_path {
+	my $self = shift;
+	$self->{lib_path} = $_[0];
+	1;
 }
 
 sub check {
@@ -56,6 +61,7 @@ sub check {
 	print $fh_write <<__EOP;
 check
 $self->{directory}
+$self->{lib_path}
 $CFG::OS_temp_dir
 $delimiter
 $$code_sref
@@ -93,6 +99,7 @@ sub execute {
 	print $fh_write <<__EOP;
 execute $filename
 $self->{directory}
+$self->{lib_path}
 $CFG::OS_temp_dir
 $delimiter
 $$code_sref

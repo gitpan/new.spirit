@@ -1,4 +1,4 @@
-# $Id: ProdReplace.pm,v 1.4 2001/03/12 11:15:19 joern Exp $
+# $Id: ProdReplace.pm,v 1.5 2003/01/30 16:25:50 joern Exp $
 
 package NewSpirit::CIPP::ProdReplace;
 
@@ -181,7 +181,7 @@ sub installation_allowed {
 		if ( $object_name ne $self->{object_name} ) {
 			# only install, if we are a replace object
 #			print STDERR "$self->{object_name}: replace install -> $object_name\n";
-			return 1;
+			return 2;
 		}
 	}
 	

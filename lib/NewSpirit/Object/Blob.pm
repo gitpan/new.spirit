@@ -1,4 +1,4 @@
-# $Id: Blob.pm,v 1.1.2.1 2001/11/12 16:57:38 joern Exp $
+# $Id: Blob.pm,v 1.2 2002/04/08 12:17:35 joern Exp $
 
 package NewSpirit::Object::Blob;
 

@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: admin.cgi,v 1.28.2.2 2002/04/05 14:56:23 joern Exp $
+# $Id: admin.cgi,v 1.31 2003/05/19 13:40:32 joern Exp $
 
 use strict;
 BEGIN {
@@ -41,10 +41,8 @@ sub main {
 	my $q = shift;
 	my $e = $q->param('e');
 	
-	my $ph;	# NewSpirit::Passwd Handle
 	if ( $e ne '' and $e ne 'login' and $e ne 'check' and $e ne 'changes' ) {
-		my $sh; #  NewSpirit::Session Handle
-		($sh, $ph) = NewSpirit::check_session_and_init_request ($q);
+		NewSpirit::check_session_and_init_request ($q);
 	}
 	
 	if ( $e eq '' ) {
@@ -193,28 +191,30 @@ sub login {
 		return;
 	}
 	
+	# unlock passwd file
+	$ph = undef;
+	
 	# read user config
 	NewSpirit::read_user_config ($username);
 
 	# now we create a user session
 	my $sh = new NewSpirit::Session;
 	my $ticket  = $sh->create ($q->remote_addr(), $username);
+	my $project = $sh->get_attrib('project');
 
-	my $project;
+	# unlock session file
+	$sh = undef;
+
 	if ( $CFG::LOGIN_SHOW_LAST_PROJECT ) {
-		$project = $sh->get_attrib('project');
-		
 		# check if user has access to this project. If not, 
 		# reset project here, otherwise the user is unable
 		# to login, because he only sees "access denied"
 		# messages
-		$project = '' if not $ph->check_project_access($username, $project) 
+		$ph = new NewSpirit::Passwd ($q);
+		$project = '' if not $ph->check_project_access($username, $project) ;
+		$ph = undef;
 	}
 
-	# unlock passwd and session files
-	$ph = undef;
-	$sh = undef;
-	
 	# put params in query object, frameset() needs them
 	$q->param('ticket', $ticket);
 	$q->param('project', $project);

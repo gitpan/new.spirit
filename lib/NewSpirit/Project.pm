@@ -1,5 +1,3 @@
-# $Id: Project.pm,v 1.18.2.2 2001/10/09 10:03:01 joern Exp $
-
 package NewSpirit::Project;
 
 @ISA = qw( NewSpirit::Widget );
@@ -82,6 +80,24 @@ sub get_project_list {
 				$projects{$conf->{description}} = $prj;
 			}
 		}
+	}
+
+	return \%projects;
+}
+
+sub get_project_root_directories {
+	my $self = shift;
+
+	my $conf_dir = $self->{conf_dir};
+	
+	my @list = <$conf_dir/*.conf>;
+	
+	my %projects;
+	foreach my $prj ( @list ) {
+		$prj = basename $prj;
+		$prj =~ s/\.conf//;
+		my $conf = $self->get_project_config ($prj);
+		$projects{$prj} = $conf->{root_dir} if $conf;
 	}
 
 	return \%projects;
@@ -506,6 +522,12 @@ __HTML
 #		$error = $!;
 #	}
 
+	if ( $path_ok ) {
+		mkdir ("$data{root_dir}/prod", 0775);
+		mkdir ("$data{root_dir}/prod/htdocs", 0775);
+		mkdir ("$data{root_dir}/prod/cgi-bin", 0775);
+	}
+
 	if ( not $path_ok ) {
 		print qq{<p><table cellpadding=2 cellspacing=0 bgcolor="$CFG::ERROR_BG_COLOR">};
 		print qq{<tr><td>$CFG::FONT_ERROR<b>Error creating directory };
@@ -528,7 +550,7 @@ __HTML
 	if ( not -d "$data{root_dir}/src" ) {
 		mkdir "$data{root_dir}/src", 0775;
 	} else {
-		chmod 0775, "$data{root_dir}/src";
+		chmod 02775, "$data{root_dir}/src";
 	}
 
 	# create project prod and logs dir, no error checking necessary
@@ -536,15 +558,15 @@ __HTML
 		mkdir "$data{root_dir}/prod", 0775;
 		mkdir "$data{root_dir}/prod/logs", 0775;
 	} else {
-		chmod 0775, "$data{root_dir}/src";
-		chmod 0775, "$data{root_dir}/prod/logs";
+		chmod 02775, "$data{root_dir}/src";
+		chmod 02775, "$data{root_dir}/prod/logs";
 	}
 
 	# create project meta dir, no error checking necessary
 	if ( not -d "$data{root_dir}/meta" ) {
 		mkdir "$data{root_dir}/meta", 0775;
 	} else {
-		chmod 0775, "$data{root_dir}/meta";
+		chmod 02775, "$data{root_dir}/meta";
 	}
 
 	# Create project configuration

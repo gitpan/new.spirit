@@ -8,7 +8,7 @@ This is the Windows formatted version of the file 'README'.
 | modify it under the same terms as Perl itself.                       |
 +----------------------------------------------------------------------+
 
-$Id: README,v 1.6 2001/03/26 13:15:52 joern Exp $
+$Id: README,v 1.7 2003/08/07 08:32:42 joern Exp $
 
 new.spirit is a Perl based software development environment for creating
 powerful dynamic databased web applications. It runs on any Perl enabled
@@ -81,7 +81,7 @@ UNIX INSTALLATION INSTRUCTIONS:
 - If all Perl modules are installed, change as user spirit to
   the new.spirit main directory and execute the installation program:
   
-    cd ..
+    cd ../..
     perl install.pl
 
 - Follow the instructions of the installer. The program will ask

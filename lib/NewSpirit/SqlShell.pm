@@ -1,5 +1,3 @@
-# $Id: SqlShell.pm,v 1.10.2.2 2002/06/04 10:45:18 joern Exp $
-
 package NewSpirit::SqlShell;
 
 use strict;
@@ -502,7 +500,7 @@ sub cmd_desc {
 	
 	my $dbh = $self->{dbh};
 	
-	my $sth = $dbh->prepare ("select * from $table where 1=0");
+	my $sth = $dbh->prepare ("select * from $table");
 	return $self->error if $DBI::errstr;
 	
 	$sth->execute;

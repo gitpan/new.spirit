@@ -1,5 +1,3 @@
-# $Id: Prep.pm,v 1.15.2.2 2002/08/21 13:10:10 joern Exp $
-
 package NewSpirit::CIPP::Prep;
 
 $VERSION = "0.01";
@@ -13,7 +11,6 @@ $VERSION = "0.01";
 
 use strict;
 use Carp;
-use NewSpirit::PerlCheck;
 use NewSpirit::Object::Text;
 
 sub get_meta_data {
@@ -112,14 +109,12 @@ sub print_install_errors {
 		return 1;
 	}
 
-#	use Data::Dumper;print "<pre>",Dumper($errors),"</pre>\n";
 
 	if ( $errors->{formatted} ) {
 		# formatted preprocessor errors
-		printf ($head, 'CIPP preprocessor');
-
 		print <<__HTML;
 <FONT SIZE="$CFG::FONT_SIZE">
+$CFG::FONT<b><a href="$self->{object_url}&e=download_prod_err_file&no_http_header=1">[DOWNLOAD PERL CODE]</a></b></font><br>
 ${$errors->{formatted}}
 </FONT>
 __HTML
@@ -182,25 +177,22 @@ __HTML
 		my $idx = 0;
 
 		foreach my $err ( @{$errors->{unformatted}} ) {
-			my @e = split ('\t', $err, 3);
-			my $include;
-			my $rowspan = 1;
+			my $name = $err->get_name;
+			my $line = $err->get_line_nr;
+			my $tag  = $err->get_tag;
+			my $msg  = $err->get_message;
+
+			$msg =~ s/</&lt;/g;
+
 			++$idx;
 			$idx = 0 if $idx == 2;
-			if ( $e[0] =~ /:/ ) {
-				# ok, we have a path of objects here,
-				# delimited by colons. Let's determine
-				# the Include, which throws this error
-				$e[0] =~ /:([^:]+)$/;
-				$include = "In Include: <b>$1</b></font></td><tr $bgcolor[$idx]><td>$CFG::FONT\n";
-				$rowspan = 2;
-			}
-			print (
-				"<tr $bgcolor[$idx]><td valign=top rowspan=$rowspan>$CFG::FONT$e[1]</td>",
-				"<td valign=top>$CFG::FONT$include$e[2]</td></tr>\n"
-			);
-		}
-		print "</tr></table>\n";
+
+			print qq{<tr $bgcolor[$idx]>},
+			      qq{<td valign=top>$CFG::FONT$line</font></td>},
+			      qq{<td valign=top>$CFG::FONT$msg</font></td></tr>\n};
+
+		}			
+		print "</table>\n";
 	}
 
 	if ( $errors->{other} ) {
@@ -263,7 +255,7 @@ sub build_module_dependencies {
 	
 	my ($CIPP) = @_;
 	
-	my $used_modules = $CIPP->Get_Used_Modules;
+	my $used_modules = $CIPP->get_used_modules;
 	return if not $used_modules;
 	
 	my $module_file = new NewSpirit::LKDB ($self->{project_modules_file});
@@ -272,7 +264,7 @@ sub build_module_dependencies {
 	foreach my $module ( keys %{$used_modules} ) {
 		my $object_file = $href->{$module};
 		my $object_type = $self->get_object_type($object_file);
-		$CIPP->Set_Direct_Used_Object ($object_file, $object_type);
+		$CIPP->add_used_object ($object_file, $object_type);
 	}
 
 	1;
@@ -280,54 +272,19 @@ sub build_module_dependencies {
 
 sub check_for_perl_errors {
 	my $self = shift;
-	
 	my %par = @_;
-	
-	my $dirname           = $par{dirname};
-	my $perl_code_sref    = $par{perl_code_sref};
-	my $fetch_output_file = $par{fetch_output_file};
+	my  ($parser, $perl_code_sref, $output_file) =
+	@par{'parser','perl_code_sref','output_file'};
 
-	# We restrict the number of checks which one perlcheck.pl
-	# process performs to 20 - otherwise the process may consumpt
-	# to much memory.
+	my $lib_path = $self->{project_base_config_data}->{base_perl_lib_dir};
 
-	++$NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance_cnt};
+	$parser->check_for_perl_errors (
+		lib_path       => $lib_path,
+		perl_code_sref => $perl_code_sref,
+		output_file    => $output_file,
+	);
 
-	if ( $NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance_cnt} == 20 ) {
-		$NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance_cnt} = 0;
-		$NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance} = undef;
-	}
-
-	my $pc = $NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance};
-
-	if ( not $pc ) {
-		$NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance_cnt} = 0;
-		$NEWSPIRIT::DATA_PER_REQUEST{prep_perl_check_instance}
-			= $pc = new NewSpirit::PerlCheck ();
-	}
-
-	$pc->set_directory ( $dirname );
-	
-	my $rc;
-	if ( $fetch_output_file ) {
-		$rc = $pc->execute (
-			$perl_code_sref, $fetch_output_file
-		);
-	} else {
-		$rc = $pc->check ($perl_code_sref);
-	}
-	
-	return $rc;
-}
-
-sub get_meta_data {
-	my $self = shift;
-
-	my $meta = $self->SUPER::get_meta_data;
-
-	$meta->{use_strict} = 1;
-	
-	return $meta;
+	1;
 }
 
 1;

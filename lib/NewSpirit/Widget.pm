@@ -1,6 +1,6 @@
 package NewSpirit::Widget;
 
-# $Id: Widget.pm,v 1.9.2.2 2002/01/23 10:52:58 joern Exp $
+# $Id: Widget.pm,v 1.10 2002/04/08 12:17:35 joern Exp $
 
 # abstract class for creation of HTML formular input widgets
 

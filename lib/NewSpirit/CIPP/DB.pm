@@ -1,5 +1,3 @@
-# $Id: DB.pm,v 1.13.2.3 2002/06/17 13:59:24 joern Exp $
-
 package NewSpirit::CIPP::DB;
 
 $VERSION = "0.01";
@@ -39,16 +37,12 @@ my %FIELD_DEFINITION = (
 		description => 'Initial SQL Statement',
 		type => 'textarea'
 	},
-	db_init_perl => {
-		description => 'Initial Perl Statements<br>($dbh is given)',
-		type => 'textarea'
-	},
 );
 
 my @FIELD_ORDER = (
 	'db_source', 'db_user', 'db_pass',
 	'db_autocommit', 'db_cache_enable',
-	'db_env', 'db_init', 'db_init_perl'
+	'db_env', 'db_init'
 );
 
 use Carp;
@@ -165,7 +159,9 @@ sub get_install_filename {
 sub install_file {
 	my $self = shift;
 
-	return 1 if not $self->installation_allowed;	# prod replace
+	my $prod_replace;
+	return 1 if not $prod_replace = $self->installation_allowed;	# prod replace
+	return 2 if $prod_replace != 2 and $self->is_uptodate;
 	
 	# first we install ourself with our real name
 	my $install_file = $self->get_install_filename;
@@ -208,22 +204,32 @@ sub real_install_file {
 	
 	open ($fh, "> $install_file")
 		or die "can't write '$install_file'";
-	print $fh <<__EOF;
-${pkg}::data_source = '$data->{db_source}';
-${pkg}::user = '$data->{db_user}';
-(${pkg}::password = q{$data->{db_pass}} ) =~ s/%(..)/chr(ord(pack('C', hex(\$1)))^85)/eg;
-${pkg}::autocommit = $data->{db_autocommit};
-${pkg}::cache_enable = $data->{db_cache_enable};
-${pkg}::init = q{$data->{db_init}};
-${pkg}::init_perl = q{$data->{db_init_perl}};
-__EOF
 
 	foreach my $env ( split (/\n/, $data->{db_env}) ) {
 		my ($k,$v) = split (/\s+/, $env);
 		print $fh qq{\$main::ENV{$k} = q{$v};\n}
 	}
 
-	print $fh "1;\n";
+	my $db_source		= $data->{db_source};
+	my $db_user		= $data->{db_user};
+	my $db_autocommit	= $data->{db_autocommit};
+	my $db_init		= $data->{db_init};
+
+	foreach my $x ( $db_source, $db_user, $db_autocommit, $db_init ) {
+		$x =~ s/'/\\'/g;
+	}
+
+	print $fh <<__EOF;
+my \$_cipp_password;
+(\$_cipp_password = q{$data->{db_pass}} ) =~ s/%(..)/chr(ord(pack('C', hex(\$1)))^85)/eg;
+{
+	data_source => '$db_source',
+	user => '$db_user',
+	password => \$_cipp_password,
+	autocommit => $db_autocommit,
+	init => q{$db_init}
+}
+__EOF
 
 	close $fh;
 	chmod 0660, $install_file;

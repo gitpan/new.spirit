@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: dbshell.pl,v 1.16.2.4 2002/06/07 15:31:09 joern Exp $
+# $Id: dbshell.pl,v 1.20 2002/06/07 15:34:14 joern Exp $
 
 use strict;
 use Getopt::Std;

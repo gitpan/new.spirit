@@ -1,4 +1,4 @@
-# $Id: HTML.pm,v 1.14.2.1 2002/04/09 08:56:03 joern Exp $
+# $Id: HTML.pm,v 1.21 2002/08/30 10:11:39 joern Exp $
 
 package NewSpirit::CIPP::HTML;
 
@@ -13,6 +13,8 @@ use File::Copy;
 use File::Basename;
 use CIPP;
 use NewSpirit::CIPP::Prep;
+use CIPP::Compile::NewSpirit;
+use Config;
 
 sub convert_meta_from_spirit1 {
 	my $self = shift;
@@ -44,118 +46,53 @@ sub get_install_filename {
 sub install_file {
 	my $self = shift;
 
-	my $meta = $self->get_meta_data;
-
-	# read database hash (old style notation, for CIPP)
-	my $databases_href = $self->get_old_style_databases;
-
-	# determine default DB (old style notation, for CIPP)
-	my $default_db = $self->get_old_style_default_database;
-	
-	# determine MIME Type and 'use strict' mode
-	my $mime_type = $meta->{mime_type};
-	my $use_strict = $meta->{use_strict};
-	
-	# this is for the generated Perl code
-	my $perl_code;
-
-	my $fh = new FileHandle;
-
-	$self->{install_errors} = {};
 	my $ok = 1;
+	$self->{install_errors} = {};
 
-	if ( open ($fh, "< $self->{object_file}") ) {
-		my $CIPP = new CIPP (
-			$fh, \$perl_code,
-			{
-				$self->{project} => "$self->{project_root_dir}/src"
-			},
-			$databases_href,
-			$mime_type, $default_db, $self->{object_name},
-			undef, 1, 'cipp',
-			$use_strict, 0, undef,
-			$self->{project},
-			1, 'EN'
-		);
-		
-		$CIPP->{print_content_type} = 0;
-		
-		# was CIPP initialization OK?
+	my $CIPP = CIPP::Compile::NewSpirit->new (
+		program_name  	=> $self->{object_name},
+		project 	=> $self->{project},
+		start_context 	=> 'html',
+		object_type   	=> 'cipp-html',
+		project_root  	=> $self->{project_root_dir},
+		no_http_header  => 1,
+		lib_path        => $self->{project_base_config_data}
+				        ->{base_perl_lib_dir},
+		url_par_delimiter => $self->{project_base_config_data}
+				        ->{base_url_par_delimiter},
+	);
 
-		if ( !$CIPP->Get_Init_Status ) {
-			push @{$self->{install_errors}->{other}},
-			     "Unable to initialize CIPP preprocessor!";
-			return;
-		}
+	$CIPP->process();
 
-		$CIPP->Preprocess();
+	return 2 if $CIPP->get_cache_ok and not $CIPP->has_errors;
 
-		close $fh;
+	# update dependencies
+	$self->build_module_dependencies ($CIPP);
+	$self->update_dependencies ( $CIPP->get_used_objects );
 
-		# update dependencies
-		
-		$self->build_module_dependencies($CIPP);
-		
-		my $dependencies = $CIPP->Get_Direct_Used_Objects;
-		
-		# HTML objects always depend on the base configuration
-		$dependencies->{$CFG::default_base_conf.":cipp-base-conf"} = 1;
-#		NewSpirit::dump($dependencies);
-		
-		$self->update_dependencies ( $dependencies );
-
-		if ( ! $CIPP->Get_Preprocess_Status ) {
-			# uh oh, errors! ;)
-			$ok = 0;
-			if ( $self->{command_line_mode} or $self->{dependency_installation} ) {
-				$self->{install_errors}->{unformatted}
-					= $CIPP->Get_Messages;
-			} else {
-				$self->{install_errors}->{formatted}
-					= $CIPP->Format_Debugging_Source;
-			}
-		} else {
-			my $to_file = $self->get_install_filename;
-
-			# check Perl syntax, with execution and output
-			# redirection to temporary HTML file
-			my $tmp_html_file = "$CFG::OS_temp_dir/cipp$$.html";
-			my $perl_errors = $self->check_for_perl_errors (
-				dirname => dirname ($to_file),
-				perl_code_sref => \$perl_code,
-				fetch_output_file => $tmp_html_file,
-			);
-			
-			open ($fh, "> /tmp/cippdebug");
-			print $fh $perl_code;
-			close $fh;
-
-			if ( $perl_errors ) {
-				# uh, oh, errors! :))
-				$ok = 0;
-				$self->{install_errors}->{perl} =
-					$CIPP->Format_Perl_Errors(
-						\$perl_code, \$perl_errors,
-						$self->{command_line_mode}
-					);
-				unlink $tmp_html_file;
-			} else {
-				# OK, let's install the resulting HTML page
-				# (move $tmp_html_file)
-
-				if ( not move ($tmp_html_file, $to_file) ) {
-					$ok = 0;
-					push @{$self->{install_errors}->{other}},
-						"Can't move '$tmp_html_file' to '$to_file'!";
-				}
-			}
-		}
-	} else {
+	if ( $CIPP->has_errors ) {
+		# uh oh, errors! ;)
 		$ok = 0;
-		push @{$self->{install_errors}->{other}}, "Can't read '$self->{object_file}'!";
+		# if we are in a dependency installation, we
+		# only give a brief list of the errors, and no
+		# error highlighted version of the source code
+		if ( $self->{dependency_installation} ) {
+			$self->{install_errors}->{unformatted}
+				= $CIPP->get_messages;
+		} else {
+			$self->{install_errors}->{formatted}
+				= $CIPP->format_debugging_source (
+					brief => $self->{command_line_mode}
+				);
+		}
+#		my $perl_code_sref = $CIPP->get_perl_code_sref;
+#		open (OUT, "> /tmp/cippdebug");
+#		print OUT $$perl_code_sref;
+#		close OUT;
+
 	}
 
-	$self->{_perl_code} = \$perl_code;
+#	$self->{_perl_code} = $CIPP->get_perl_code_sref;
 
 	return $ok;
 }

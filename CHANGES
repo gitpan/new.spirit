@@ -1,53 +1,91 @@
-$Id: CHANGES,v 1.32.2.18 2003/08/12 08:27:22 joern Exp $
+Changes of new.spirit
 
-2.0.26 2003/08/11 joern
-	Bugfixes:
-	- "Project compilation" created CVS.m files.
-
-2.0.25 2003/08/07 joern
+2.1.19  Tue Aug 12 2003, joern
 	Bugfixes:
 	- "Project compilation" created "html.m" files for folders
 	  named "html".
-	- Error message when reading a corrupted db config file
-	  didn't contain the filename.
 
-2.0.24 2003/04/04 joern
+2.1.18  Thu Aug 07 2003, joern
 	Bugfixes:
-	- added a timeout to the perl syntax checker to prevent
-	  hanging processes
-	- use the actual perl binary to execute the external perl
-	  code checker program, not the one found first in PATH
-	- fixed a bug in dbshell, which crashed the program if the
-	  terminal size couldn't be determined correctly
+	- sometimes the project compilation claimed to be error-free,
+	  but wasn't
+	- database prod config file was corrupt if the user entered
+	  ' characters in database configuration parameters.
+	- fixed a minor typo in the README file
 
-2.0.23 2002/08/21 joern
+2.1.17
 	Bugfixes:
-	- "use strict" property removed from all object types. Files
-	  created with newspirit 2.99 (CIPP 3 enabled version)
-	  hadn't use_strict enabled, because this property was
-	  removed in 2.99. But this was interpreted as "no strict"
-	  by newspirit 2.0.x. Not using "use strict" is evil anyway,
-	  so: bye bye "no strict"... ;)
-	- missing .m (property) files are created now with the
-	  default values for the object type. This was done in memory
-	  each time, but without saving the .m file.
+	- fixed passwd/session deadlock problem
+	- ' in fields of a database configuration created an
+	  invalid prod .db-conf file.
 
-2.0.22 2002/06/17 joern
 	Features:
-	- new parameter for DB configuration objects: "Initial Perl
-	  Statement", which is executed just after connecting to
-	  the database. Requires CIPP::Runtime 0.41 (shipped with
-	  CIPP 
+	- new project configuration parameter: add_prod_dir.
+	  Enables searching for includes, libs and configs in
+	  external CIPP3 projects. Needs CIPP 2.9.22.
 
-2.0.21 2002/06/07 joern
+2.1.16
+	Bugfixes:
+	- prod replacing didn't work
+	- inc/ directory wasn't installed
+
+2.1.15
+	Features:
+	- New project attribute 'utf8', which enables the utf8-awareness
+	  of CIPP >= 2.9.19
+
+	Bugfixes:
+	- Perl syntax checking of HTML objects didn't work,
+	  runtime errors were supressed, HTML code creation
+	  failed silently. (#3170)
+	- "Not an ARRAY reference" exception in case of base configuration
+	  dependency errors fixed.
+
+2.1.14
+	Features:
+	- perl shebang line can also be configured for
+	  the development environment, not only for
+	  production environment.
+2.1.13
+	Features:
+	- new command line program ns-projects. It lists all
+	  projects with name and root directory, delimited
+	  by a tab character.
+
+2.1.12
+	Features:
+	- scrolling for depenceny installation less aggressive
+	  (only one scroll command per second)
+	- synchronized with some internal CIPP3 API changes
+
+2.1.11 2002/08/26 joern
+	Features:
+	- new attribute in the base configuration: CGI parameter
+	  delimiter. You can decide between ; and  &. & is known
+	  to make problems with some browsers, because specific
+	  strings may be interpreted as an entity, even inside
+	  an URL (e.g. &not=1).
+	  You must recompile the whole project after changing this
+	  attribute.
+
+	Bugfixes:
+	- cipp-html objects didn't depend on the base configuration
+	- compilation of cipp-html objects was cached, what's
+	  nonsense, because the document is generated at compile time
+
+2.1.10 2002/06/07 joern
 	Features:
 	- dbshell.pl: added -x option which enables abort mode
 
-2.0.20 2002/06/04 joern
+2.1.9 2002/06/04 joern
 	Features:
 	- dbshell.pl: support CIPP3 .db-conf files
 
-2.0.18 2002/04/08 joern
+2.1.8 2002/04/09 joern
+	Features:
+	- support for brief error supports in cmd line mode
+
+2.1.7 2002/04/08 joern
 	Features:
 	- name of new.spirit server is stored in base configuration
 	  source file
@@ -55,9 +93,28 @@ $Id: CHANGES,v 1.32.2.18 2003/08/12 08:27:22 joern Exp $
 	  a Gtk+ window with its output. useful for integration
 	  into an external IDE.
 
-2.0.17 2002/04/05 joern
+2.1.6  2002/04/05 joern
 	Features:
 	- project name is stored in base configuration source file
+
+2.1.5  2002/03/21 joern
+	Bugfixes:
+	- sometimes cached errors wasn't reported
+
+	Features:
+	- caching for all object types
+
+2.1.4  2001/10/29 joern
+	Bugfixes:
+	- users can't be modified in LDAP mode
+
+2.1.3  2001/10/26 joern
+	Features:
+	- LDAP support
+
+2.1.2  2001/10/25 joern
+	- first internal Alpha Release with CIPP3 support. This
+	  version REQUIRES CIPP3
 
 2.0.15 2002/01/23 joern
 	Features:

@@ -1,5 +1,3 @@
-# $Id: Object.pm,v 1.51.2.4 2002/08/21 13:09:39 joern Exp $
-
 package NewSpirit::Object;
 
 # for i in $(find . -type d -a -name NEWSPIRIT); do (echo $i; cd $i; mv *.m ..); done
@@ -52,6 +50,7 @@ package NewSpirit::Object;
 # make_install_path		Creates the install path if necessary
 # install			Controls installation of a object into the prod tree
 # install_file			Installs the file into the prod tree
+# dependency_installation_needed	Checks is a dep installation is necessary
 # print_install_errors		Print installation errors
 # update_dependencies		Updates the dependencies for this object
 # dependencies_ctrl		CGI event handler for the 'dependencies' event
@@ -72,6 +71,7 @@ package NewSpirit::Object;
 # check_properties		checks if user edited properties are ok
 # get_object_src_file		returns the source file to a given object name
 # download_filename		Filename for download
+# is_uptodate			checks if prod file is newer than src file
 #
 # Stub methods, to be overloaded:
 # -------------------------------
@@ -111,6 +111,7 @@ package NewSpirit::Object;
 #	project_cgi_base_dir	Project cgi-bin base directory, absolute
 #	project_htdocs_base_dir	Project htdocs base directory, absolute
 #	project_lib_dir		Project lib base directory, absolute
+#	project_inc_dir		Project include base directory, absolute
 #	project_cgi_dir		Project cgi-bin base + project directory, absolute
 #	project_htdocs_dir	Project htdocs base + project directory, absolute
 #	project_config_dir	Project config base directory, absolute
@@ -307,17 +308,24 @@ sub new {
 
 	my $prod_dir = "$project_root_dir/prod";
 	
-	# if we are not using the default base configuration
-	# we must determine the prod-directory out of the
-	# actual base configuration object
-	
+	# load base config data if we are not instantiating
+	# the base config object (this would result in
+	# an endless loop)
+
 	my $base_config_data;
-	if ( $base_conf ne $CFG::default_base_conf ) {
+	if ( $object ne $CFG::default_base_conf ) {
 		my $base_config_object = new NewSpirit::Object (
 			q => $q,
 			object => $base_conf
 		);
 		$base_config_data = $base_config_object->get_data;
+	}
+	
+	# if we are not using the default base configuration
+	# we must determine the prod-directory out of the
+	# actual base configuration object
+
+	if ( $base_conf ne $CFG::default_base_conf ) {
 		$prod_dir = "$project_root_dir/$base_config_data->{base_install_dir}/prod";
 	}
 
@@ -350,6 +358,7 @@ sub new {
 		project_htdocs_dir => "$prod_dir/htdocs/$project",
 		project_config_dir => "$prod_dir/config",
 		project_lib_dir => "$prod_dir/lib",
+		project_inc_dir => "$prod_dir/inc",
 		project_sql_dir => "$prod_dir/sql",
 		project_log_dir => "$prod_dir/logs",
 		project_log_file => "$prod_dir/logs/cipp.log",
@@ -372,6 +381,8 @@ sub new {
 	croak "can't load NewSpirit Module '$module' for object type '$object_type': $@" if $@;
 	
 	$self = bless $self, $module;
+
+	$self->{project_base_config_data} ||= $self->get_data;
 
 	$self->set_lock if $set_lock;
 	$self->convert_from_spirit1;
@@ -1439,9 +1450,6 @@ sub get_meta_data {
 				if defined $properties->{$prop}->{default};
 		}
 		
-		# create meta file
-		$self->save_meta_data ( $self->{_meta_data} );
-
 	} else {
 		my $df = new NewSpirit::DataFile ($meta_filename);
 		$self->{_meta_data} = $df->read;
@@ -2422,6 +2430,44 @@ sub download_prod_file_ctrl {
 }
 
 #---------------------------------------------------------------------
+# download_prod_err_file_ctrl - CGI event handler for the 'download_prod_err_file' event
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->download_prod_err_file_ctrl
+#
+# DESCRIPTION:
+#	Sends a HTTP header with the object type corresponding
+#	MIME TYPE and then prints the corresponding error prod file of
+#	this object. (object filename with ext .err )
+#---------------------------------------------------------------------
+
+sub download_prod_err_file_ctrl {
+	my $self = shift;
+	
+	my $mime_type = $self->{object_type_config}->{mime_type};
+	my $q = $self->{q};
+
+	print $q->header(
+		-nph => 1,
+		-type => $mime_type,
+		-Pragma => 'no-cache',
+		-Expires => 'now'
+	);
+
+	my $prod_file = $self->get_install_filename.".err";
+	
+	my $fh = new FileHandle;
+	if ( open ($fh, $prod_file) ) {
+		print STDOUT <$fh>;
+		close $fh;
+	} else {
+		print "$prod_file not found!\n";
+	}
+	
+	1;
+}
+
+#---------------------------------------------------------------------
 # get_databases - Returns a hash of databases definition objects
 #---------------------------------------------------------------------
 # SYNOPSIS:
@@ -2753,7 +2799,9 @@ sub install {
 
 	if ( not $ok ) {
 		$verbose && $self->print_install_errors;
-	} else {
+
+	} elsif ( $self->dependency_installation_needed ) {
+
 		$verbose && $self->print_post_install_message;
 
 		if ( $self->{q}->param('e') !~ /without_dep$/ and
@@ -2765,7 +2813,7 @@ sub install {
 
 			$verbose && print "$CFG::FONT_FIXED<BLOCKQUOTE>\n";
 
-			$self->install_dependant_objects;
+			my $successful = $self->install_dependant_objects;
 		
 			$verbose && print "</FONT></BLOCKQUOTE>\n";
 
@@ -2787,10 +2835,17 @@ sub install {
 				}
 			}
 			
-			if ( $verbose and not $self->{dependency_installation_errors} ) {
+			if ( $verbose and not $self->{dependency_installation_errors}
+			     and $successful) {
 				print "$CFG::FONT",
 				      "<b>Congratulations. All objects installed OK!</b>",
 				      "</FONT><p>";
+			}
+			
+			if ( not $successful ) {
+				print "$CFG::FONT<font color=red>",
+				      "<b>Some objects have errors</b>",
+				      "</font></FONT><p>";
 			}
 			
 			if ( $verbose ) {
@@ -2799,12 +2854,31 @@ sub install {
 			}
 
 		}
+	} else {
+		$verbose && $self->print_post_install_message;
 	}
 
 	# delete cached Depend object
 	$self->clear_depend_object;
 
 	return $ok;
+}
+
+#---------------------------------------------------------------------
+# install_file - Install a object file into the prod tree
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$self->dependency_installation_needed
+#
+# DESCRIPTION:
+#	This method checks, if a dependency installation is needed
+#	or not. This implementation returns always true, but derived
+#	classes may override this behaviour.
+#
+#---------------------------------------------------------------------
+
+sub dependency_installation_needed {
+	return 1;
 }
 
 #---------------------------------------------------------------------
@@ -2822,6 +2896,8 @@ sub install {
 
 sub install_file {
 	my $self = shift;
+
+	return 2 if $self->is_uptodate;
 	
 	$self->{install_errors} = [];
 
@@ -2941,6 +3017,11 @@ sub install_dependant_objects {
 	# list of our object type
 
 	my $nr = 0;
+	my $some_dependent_objects_has_errors = 0;
+
+	my $last_scrolling_time = time;
+
+	my $successful = 1;
 
 	foreach my $type ( @depend_type_list ) {
 		next if not $dep_by_type{$type};
@@ -2985,6 +3066,10 @@ sub install_dependant_objects {
 				# dependency installation themself
 				$o->{no_dependency_installation} = 1;
 			}
+
+
+			$o->{no_dependency_installation} = 1;
+
 		
 			# transfer the cached Depend object to the new
 			# NewSpirit::Object instance
@@ -3002,6 +3087,7 @@ sub install_dependant_objects {
 			if ( not $ok ) {
 				$self->{dependency_installation_errors}->{$object}
 					= $o->{install_errors};
+				$some_dependent_objects_has_errors = 1;
 			}
 		
 			# now we copy all dependency errors of our child
@@ -3014,16 +3100,28 @@ sub install_dependant_objects {
 			}
 		
 			# progress information
-			if ( $ok ) {
-				print "<FONT COLOR=green><B>OK</B></FONT>&nbsp;.....&nbsp;$print_object<br>\n";
+			if ( $ok == 1) {
+				print "<FONT COLOR=green><B>OK</B></FONT>&nbsp;......&nbsp;$print_object<br>\n";
+			} elsif ( $ok == 2 ) {
+				print "<FONT COLOR=green><B>CACHED</B></FONT>&nbsp;..&nbsp;$print_object<br>\n";
+			} elsif ( $ok == -1 ) {
+				print "<FONT COLOR=orange><B>INC&nbsp;ERR</B></FONT>&nbsp;.&nbsp;$print_object<br>\n";
 			} else {
-				print "<FONT COLOR=red><B>NOT&nbsp;OK&nbsp;</B></FONT>.&nbsp;$print_object<br>\n";
+				print "<FONT COLOR=red><B>NOT&nbsp;OK&nbsp;</B></FONT>..&nbsp;$print_object<br>\n";
 			}
-			print "<script>self.window.scroll(0,5000000)</script>\n";
-			print "<script>self.window.scroll(0,5000000)</script>\n";
+
+			$successful = 0 if $ok != 1 and $ok != 2;
+
+			if ( time - $last_scrolling_time > 1 ) {
+				$last_scrolling_time = time;
+				print "<script>self.window.scroll(0,5000000)</script>\n";
+				print "<script>self.window.scroll(0,5000000)</script>\n";
+			}
 
 		}
 	}
+	
+	return $successful;
 }
 
 
@@ -3232,11 +3330,10 @@ sub print_dependencies {
 	# now print the objects sorted by name
 	foreach my $o (sort { lc($a) cmp lc($b) } keys %object) {
 		# determine real name of the object type
+
 		my $type_text = $NewSpirit::Object::object_types
 					->{$object{$o}}
 					->{name};
-
-#		print STDERR "$object{$o}=$type_text\n";
 
 		# first print the indent string
 		print $indent;
@@ -3244,12 +3341,22 @@ sub print_dependencies {
 		# now the object name followed be its type
 		my $print_o = $o;
 		$print_o =~ s/\.[^\.]+$//;
+
+		# check for error
+		my $err_file = $print_o;
+		$err_file = "$self->{project_meta_dir}/##cipp_dep/$err_file.err";
+
 		$print_o =~ s!/!.!g;
+		$print_o = "$self->{project}.$print_o";
+
+		if ( -f $err_file ) {
+			$print_o = qq{<b><font color=red>$print_o</font></b>};
+		}
 
 		if ( $print_o =~ s/^\s+// ) {
 			$print_o = qq{<b><font color=red>$print_o</font></b>};
 		} else {
-			$print_o = qq{<b>$self->{project}.$print_o</b>};
+			$print_o = qq{<b>$print_o</b>};
 			if ( not $no_edit_links ) {
 				$print_o = qq{<a href="javascript:open_editor('$o')">}.
 					   qq{$print_o</a>};
@@ -3391,19 +3498,21 @@ sub get_compile_dependant_objects {
 	my $compile_objects = $depend->get_dependants (
 		"$self->{object}:$self->{object_type}"
 	);
+
 	my @resolve_objects = keys %{$compile_objects};
 
 	# now follow their dependencies, if this is needed
+	my %seen; # prevent endless loop in case of recursive inclusion
 	while ( @resolve_objects ) {
 		my $object = pop @resolve_objects;
 		my ($name, $type) = split (":", $object);
-		next if $type ne 'cipp-inc';
-	
-		# only includes needs to be analyzed --------------
-		
-		# remove the include from the %compile_objects hash
-		delete $compile_objects->{$object};
 
+		# only includes needs to be analyzed --------------
+		next if $type ne 'cipp-inc';
+		next if $seen{$object};
+		
+		$seen{$object} = 1;
+	
 		# get dependants
 		my $dependants = $depend->get_dependants ($object);
 		
@@ -3987,6 +4096,40 @@ sub get_object_src_file {
 	}
 	
 	return $filenames_lref->[0];
+}
+
+#---------------------------------------------------------------------
+# is_uptodate - checks if prod file is newer than src file
+#---------------------------------------------------------------------
+# SYNOPSIS:
+#	$ok = $self->is_uptodate
+#
+# DESCRIPTION:
+#	Returns true if the prod file is newer than src file.
+#
+#---------------------------------------------------------------------
+
+sub is_uptodate {
+	my $self = shift;
+	
+	my $src_file  = $self->{object_file};
+	my $prod_file = $self->get_install_filename;
+	
+	return 1 if (stat($src_file))[9] < (stat($prod_file))[9];
+	return;
+}
+
+sub dump {
+	my $self = shift;
+	my @par = @_;
+	
+	if ( @par ) {
+		print "<pre>",Dumper(@par),"</pre>\n";
+	} else {
+		print "<pre>",Dumper($self),"</pre>\n";
+	}
+	
+	1;
 }
 
 1;

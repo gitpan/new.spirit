@@ -1,4 +1,4 @@
-#!/usr/dim/perl/bin/perl
+#!/usr/dim/perl/5.6.1/bin/perl
 #!/usr/local/perl/5.6.0/bin/perl
 #!/usr/local/perl/5.005_03/bin/perl
 
@@ -16,12 +16,16 @@
 #	1. Line		Directory, to chdir() to befor evaluating
 #			the Perl code. If this line is empty,
 #			the program exits.
-#	2. Line		Directory to use for temp. files
-#	3. Line		A delimiter string. This string marks the
+#	2. Line		Colon delimited list of additional library
+#			directories to be added to @INC (only added
+#			for the first request, ignored by subsequent
+#			requests)
+#	3. Line		Directory to use for temp. files
+#	4. Line		A delimiter string. This string marks the
 #			end of the Perl code, sent after this line.
 #			The Perl code must not contain this delimiter
 #			string itself.
-#	4. Line		Perl code
+#	5. Line		Perl code
 #	...		  - " -
 #	n. Line		  - " -
 #	n+1. Line	The delimiter string from the third line.
@@ -73,15 +77,26 @@ main: {
 	$| = 1;
 	$SIG{__WARN__} = \&catch_warnings;
 	$SIG{__DIE__}  = undef;
+
+	# otherwise the CGI module will prompt for input
+	$ENV{REQUEST_METHOD} = "GET";
+	$ENV{QUERY_STRING} = "foo=1";
+
 	perlcheck_loop();
 }
 
 sub perlcheck_loop {
 	writelog ("started");
+
+	my $first = 1;
 	while ( 1 ) {
+		writelog ("waiting on input...");
+
 		# first: read what to do
 		my $what = <STDIN>;
 		chomp $what;
+
+		writelog ("got what='$what'");
 		
 		last if $what eq '';
 		if ( $what !~ /^(check|execute)/ ) {
@@ -95,12 +110,27 @@ sub perlcheck_loop {
 		my $execute_dir = <STDIN>;
 		chomp $execute_dir;
 
+		writelog ("got execute_dir='$execute_dir'");
+
 		last if $execute_dir eq '';
+		
+		# additional library directories (may be empty)
+		my $add_lib_dirs = <STDIN>;
+		chomp $add_lib_dirs;
+	
+		writelog ("got add_lib_dirs=$add_lib_dirs");
+	
+		if ( $first and $add_lib_dirs ) {
+			my @lib = split(":", $add_lib_dirs);
+			unshift @INC, @lib;
+		}
 		
 		# now read the temp dir
 		
 		my $temp_dir = <STDIN>;
 		chomp $temp_dir;
+
+		writelog ("got temp_dir=$temp_dir");
 
 		last if $temp_dir eq '';
 
@@ -109,6 +139,8 @@ sub perlcheck_loop {
 	
 		my $delimiter = <STDIN>;
 		chomp $delimiter;
+
+		writelog ("got delimiter=$delimiter");
 
 		last if $delimiter eq '';
 
@@ -153,6 +185,8 @@ sub perlcheck_loop {
 		}
 
 		print "$delimiter\n";
+
+		$first = 0;
 	}
 }
 
@@ -164,6 +198,7 @@ sub perlcheck {
 	my $cwd_dir = cwd();
 	if ( $dir ) {
 		chdir $dir or return "Can't chdir to '$dir'";
+		$0 = "$dir/foo";
 	}
 
 	# some CIPP specific error handler stuff
@@ -204,6 +239,7 @@ sub perlexecute {
 	my $cwd_dir = cwd();
 	if ( $dir ) {
 		chdir $dir or return "Can't chdir to '$dir'";
+		$0 = "$dir/foo";
 	}
 
 	# redirect STDOUT
@@ -232,8 +268,14 @@ sub perlexecute {
 	$CIPP_Exec::_cipp_in_execute = 1;
 	$CIPP_Exec::_cipp_no_http = 1;
 
+	# disable BEGIN and END blocks
+	$$perl_sref =~ s/BEGIN//gs;
+	$$perl_sref =~ s/END//gs;
+
 	# evaluate Perl code and reset error handler
-	writelog ("execute perl code");
+	writelog ("execute perl code: $0");
+	writelog ($$perl_sref);
+
 	my $error = exec_perl_code ($perl_sref);
 
 	# change to old directory
@@ -262,10 +304,10 @@ sub crash {
 
 sub writelog {
 	my ($msg) = @_;
-	return;
+#	return;
 
 	my $date = scalar(localtime(time));
-	open (LOG, "> /tmp/perlcheck.log");
+	open (LOG, ">> /tmp/perlcheck.log");
 	print LOG "$date $$\t$msg\n";
 	close LOG;
 	
@@ -277,36 +319,20 @@ sub writelog {
 
 	sub eval_perl_code {
 		my ($__PERL_CODE_SREF__) = @_;
-
-		eval {
-			local $SIG{ALRM} = sub { die "CIPP-TIMEOUT" };
-			alarm 10;
-			$__CATCHED__WARNINGS__='';
-			no strict;
-			eval "return; ".$$__PERL_CODE_SREF__;
-			alarm 0;
-			$__CATCHED__WARNINGS__ .= $@
-				if $@ !~ /CIPP-TIMEOUT/;
-		};
 	
-		return $__CATCHED__WARNINGS__;
+		$__CATCHED__WARNINGS__='';
+		eval "return; ".$$__PERL_CODE_SREF__;
+	
+		return $__CATCHED__WARNINGS__.$@;
 	}
 
 	sub exec_perl_code {
 		my ($__PERL_CODE_SREF__) = @_;
 
-		eval {
-			local $SIG{ALRM} = sub { die "CIPP-TIMEOUT" };
-			alarm 20;
-			$__CATCHED__WARNINGS__='';
-			no strict;
-			eval $$__PERL_CODE_SREF__;
-			alarm 0;
-			$__CATCHED__WARNINGS__ .= $@
-				if $@ !~ /CIPP-TIMEOUT/;
-		};
+		$__CATCHED__WARNINGS__='';
+		eval $$__PERL_CODE_SREF__;
 	
-		return $__CATCHED__WARNINGS__;
+		return $__CATCHED__WARNINGS__.$@;
 	}
 	
 	sub catch_warnings {

@@ -1,5 +1,6 @@
 #!/usr/dim/bin/perl
 
+# kopiert von /usr/projects/newspirit2/bin/newspirit rev 1.1.2.11
 use strict;
 
 use Carp;

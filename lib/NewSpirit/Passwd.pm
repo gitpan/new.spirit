@@ -1,4 +1,4 @@
-# $Id: Passwd.pm,v 1.14 2001/02/19 15:24:35 joern Exp $
+# $Id: Passwd.pm,v 1.17 2001/10/29 15:49:18 joern Exp $
 
 package NewSpirit::Passwd;
 
@@ -120,11 +120,72 @@ sub check_password {
 
 	return if $username eq '' or $check_password eq '';
 
+	return $self->ldap_check_password ($username, $check_password)
+		if $username ne 'spirit' and
+		   $CFG::ldap_enabled;
+
 	$check_password = $self->crypt($check_password, $username);
 
 	my ($password) = $self->get($username);
 
 	$password eq $check_password;
+}
+
+sub ldap_check_password {
+	my $self = shift;
+	my ($username, $password) = @_;
+	
+	require "Net/LDAP.pm";
+
+	my $ldap;
+	eval {
+		# anonymous connect
+        	$ldap = Net::LDAP->new (
+			$CFG::ldap_server,
+			onerror => 'die',
+		) or die "$@";
+
+        	$ldap->bind;
+
+		# search uid (we need the dn)
+        	my $result = $ldap->search (
+			base   => $CFG::ldap_base,
+			filter => "$CFG::ldap_uid=$username"
+		);
+
+		die "username ambigious" if $result->count > 1;
+
+		# catch dn
+		my $entry = $result->shift_entry;
+		my $dn = $entry->dn;
+
+        	$ldap->unbind;
+
+		# now try to connect with this dn and the
+		# given password to validate the account
+		$ldap = Net::LDAP->new (
+			$CFG::ldap_server,
+			onerror => 'die',
+		) or die "$@";
+
+		$ldap->bind (
+        	     dn       => $dn,
+        	     password => $password,
+		);
+	};
+
+	my $error = $@;
+
+	$ldap->unbind if defined $ldap;
+
+	return if $error;
+	
+	# if this is a new user to new.spirit,
+	# create the corresponding account
+	eval { $self->check_user ( $username ) };
+	$self->add ($username, "*", {}, {}) if $@;
+	
+	return 1;	
 }
 
 sub crypt {
@@ -168,6 +229,9 @@ sub put {
 	} else {
 		($password) = $self->get ($username);
 	}
+
+	$password = '*' if $CFG::ldap_enabled and
+			   $username ne 'spirit';
 
 	$self->{hash}->{$username} = join ("\t",
 		$password,
@@ -358,6 +422,11 @@ my @FIELD_ORDER = (
 	'rights', 'projects'
 );
 
+my @FIELD_ORDER_LDAP = (
+	'edit_username',
+	'rights', 'projects'
+);
+
 sub widget_type_projects {
 	my $self = shift;
 	
@@ -501,6 +570,15 @@ sub print_user_form {
 			"this.form.password.value != '' && ".
 			"this.form.password.value == ".
 			"this.form.password2.value";
+	} else {
+		$js_check_password =
+			"&& ".
+			"this.form.password.value == ".
+			"this.form.password2.value";
+	}
+	
+	if ( $CFG::ldap_enabled and $username ne 'spirit' ) {
+		$js_check_password = '';
 	}
 	
 	my $q = $self->{q};
@@ -534,9 +612,13 @@ __HTML
 		);
 	}
 
+	my $names_lref = \@FIELD_ORDER;
+	$names_lref = \@FIELD_ORDER_LDAP if $CFG::ldap_enabled and
+				  	    $username ne 'spirit';
+
 	$self->input_widget_factory (
 		read_only_href => \%read_only,
-		names_lref     => \@FIELD_ORDER,
+		names_lref     => $names_lref,
 		info_href      => \%FIELD_DEFINITION,
 		data_href      => {
 			edit_username => $username
@@ -640,6 +722,19 @@ sub event_chpasswd_ask {
 		page_title => "Change Password Of User '$username'"
 	);
 	
+	if ( $CFG::ldap_enabled ) {
+		print <<__HTML;
+$CFG::FONT
+This new.spirit server is configured to use a LDAP database<br>
+for account validiation. Please change your password<br>
+in the LDAP server.
+</font>
+__HTML
+		$self->back_to_main;
+		NewSpirit::end_page();
+		return;
+	}
+
 	print <<__HTML;
 <form name="usr" action="$CFG::admin_url" method="POST">
 <input type="HIDDEN" name=ticket value="$ticket">
@@ -717,6 +812,19 @@ sub event_chpasswd {
 	NewSpirit::std_header (
 		page_title => "Change Password Of User '$username'"
 	);
+
+	if ( $CFG::ldap_enabled ) {
+		print <<__HTML;
+$CFG::FONT
+This new.spirit server is configured to use a LDAP database<br>
+for account validiation. Please change your password<br>
+in the LDAP server.
+</font>
+__HTML
+		$self->back_to_main;
+		NewSpirit::end_page();
+		return;
+	}
 	
 	print <<__HTML;
 $CFG::FONT

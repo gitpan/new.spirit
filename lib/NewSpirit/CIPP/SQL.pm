@@ -1,4 +1,4 @@
-# $Id: SQL.pm,v 1.19 2001/03/23 14:34:56 joern Exp $
+# $Id: SQL.pm,v 1.20 2002/03/22 15:56:33 joern Exp $
 
 package NewSpirit::CIPP::SQL;
 
@@ -273,6 +273,8 @@ sub exec_sql {
 sub install_file {
 	my $self = shift;
 	
+	return 2 if $self->is_uptodate;
+
 	# first install the .sql file via NewSpirit::Object
 	$self->SUPER::install_file;
 	

@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: nph-object.cgi,v 1.28.2.2 2001/11/23 11:18:09 joern Exp $
+# $Id: nph-object.cgi,v 1.30 2002/08/26 14:59:51 joern Exp $
 
 use strict;
 BEGIN {
@@ -44,7 +44,8 @@ my %METHOD = (
 	delete				=> 'delete_ctrl',
 	refresh_db_popup 		=> 'refresh_db_popup',
 	refresh_base_config_popup	=> 'refresh_base_config_popup',
-	download_prod_file 		=> 'download_prod_file_ctrl'
+	download_prod_file 		=> 'download_prod_file_ctrl',
+	download_prod_err_file 		=> 'download_prod_err_file_ctrl',
 );
 
 main: {

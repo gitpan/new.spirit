@@ -1,4 +1,3 @@
-
 package NewSpirit;
 
 $VERSION  = "0.01";
@@ -73,6 +72,7 @@ sub check_session_and_init_request {
 		my $ph = new NewSpirit::Passwd ($q);
 		($username, $password) = decrypt_credentials($credentials);
 		if ( $ph->check_password ($username, $password) ) {
+			$ph = undef;	# unlock passwd
 			$sh = new NewSpirit::Session;
 			$ticket  = $sh->create ($q->remote_addr(), $username);
 			$q->param('ticket',$ticket);
@@ -92,10 +92,16 @@ sub check_session_and_init_request {
 
 	if ( not $error ) {
 		if ( $project ) {
+			$sh = undef; # unlock session (prevents deadlock)
 			my $ph = new NewSpirit::Passwd ($q);
 			if ( not $ph->check_project_access($username, $project) ) {
 				$error = "You have no access on this project!";
 			}
+			$ph = undef; # unlock passwd
+
+			# create session object again
+			$sh = NewSpirit::Session->new;
+			$sh->check ($ticket, $q->remote_addr());
 		}
 	}
 
@@ -159,7 +165,7 @@ sub print_error {
 	print "</td></tr></table>\n";
 	print "</td></tr></table>\n";
 	print "</td></tr></table>\n";
-	print "<P><B>Internal Error</B><P><PRE>$err</PRE>\n";
+	print "<P>$CFG::FONT<B>Internal Error</B></font><P><PRE>$err</PRE>\n";
 }
 
 sub blank_page {

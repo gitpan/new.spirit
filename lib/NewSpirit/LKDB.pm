@@ -1,6 +1,3 @@
-
-# $Id: LKDB.pm,v 1.18.2.1 2001/10/09 10:03:01 joern Exp $
-
 package NewSpirit::LKDB;
 
 $VERSION = "0.04";

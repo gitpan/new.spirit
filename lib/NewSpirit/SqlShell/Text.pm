@@ -1,5 +1,3 @@
-# $Id: Text.pm,v 1.8.2.2 2003/04/04 09:40:29 joern Exp $
-
 package NewSpirit::SqlShell::Text;
 use vars qw ( @ISA );
 

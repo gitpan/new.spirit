@@ -1,5 +1,3 @@
-# $Id: Install.pm,v 1.19.2.5 2003/08/12 08:27:10 joern Exp $
-
 package NewSpirit::Object::Install;
 
 #---------------------------------------------------------------------
@@ -119,16 +117,18 @@ sub compile_project_ctrl {
 		my $conf_dir   = $self->{project_config_dir};
 		my $lib_dir    = $self->{project_lib_dir};
 		my $sql_dir    = $self->{project_sql_dir};
-		
+		my $inc_dir    = $self->{project_inc_dir};
+		my $cipp_meta_dir = $self->{project_meta_dir}."/##cipp_dep";
+
 		print "$CFG::FONT<b>",
 		      "Deleting old production files...",
 		      "</b>";
 		
 		print "<blockquote>\n";
-		print "$cgi_dir<br>\n$htdocs_dir<br>\n$conf_dir<br>\n$sql_dir<br>\n$lib_dir<br>\n";
+		print "$cgi_dir<br>$htdocs_dir<br>$conf_dir<br>$sql_dir<br>$lib_dir<br>$inc_dir<br>$cipp_meta_dir<br>\n";
 		print "</blockquote></FONT><p>\n";
 
-		rmtree ( [ $cgi_dir, $htdocs_dir, $conf_dir, $sql_dir, $lib_dir ], 0, 0);
+		rmtree ( [ $cgi_dir, $htdocs_dir, $conf_dir, $sql_dir, $lib_dir, $inc_dir, $cipp_meta_dir ], 0, 0);
 	}
 
 	if ( $q->param('trunc_depend') == 1 ) {
@@ -274,6 +274,13 @@ sub install_project_ctrl {
 	NewSpirit::copy_tree (
 		from_dir => "$project_prod_dir/lib",
 		to_dir   => "$install_prod_dir/lib",
+		verbose => 1
+	);
+	
+	mkdir ("$install_prod_dir/inc", 0775) if not -d "$install_prod_dir/inc";
+	NewSpirit::copy_tree (
+		from_dir => "$project_prod_dir/inc",
+		to_dir   => "$install_prod_dir/inc",
 		verbose => 1
 	);
 	
@@ -506,11 +513,12 @@ sub replace_shebang {
 	if ( $shebang_map ) {
 		foreach my $line ( split (/[\n\r]/, $shebang_map ) ) {
 			my ($object, $shb) = split (/\s+/, $line, 2);
+			next if not $object or not $shb;
 			$object =~ s!^[^\.]+\.!$self->{project}.!;
 			$object =~ tr!.!/!;
 			$object = "$dir/$object";
 			$object =~ s!/+!/!g;
-			$shb = "#!$shebang" if $shebang !~ /^#!/;
+			$shb = "#!$shb" if $shb !~ /^#!/;
 			$map{$object} = $shb;
 			
 			$object =~ s!^$dir!\$CGI_DIR!;
@@ -523,7 +531,6 @@ sub replace_shebang {
 #use Data::Dumper; print Dumper(\%map);
 
 	my $default_shebang = $shebang;
-
 
 	find (
 		sub {
@@ -550,7 +557,7 @@ sub replace_shebang {
 
 #print "$filename -> $shebang\n";
 
-			$text =~ s/^#\!.*perl/$shebang/;
+			$text =~ s/^#\!.*/$shebang/;
 			
 			open (OUT, ">$filename")
 				or die "can't write $filename";

@@ -1,4 +1,4 @@
-# $Id: install.pl,v 1.10.2.3 2003/08/12 08:26:48 joern Exp $
+# $Id: install.pl,v 1.14 2002/04/08 12:17:35 joern Exp $
 
 require 5.004_04;
 
@@ -24,7 +24,7 @@ main: {
 	hello();
 
 	my %opts;
-	my $ok = getopts ('pvc:h:', \%opts);
+	my $ok = getopts ('lpvc:h:b:s:', \%opts);
 
 	$VERBOSE = 1 if $opts{v};
 
@@ -36,9 +36,13 @@ main: {
 	check_modules();
 
 	configure(
-		dont_ask   => $opts{c} && $opts{h},
-		cgi_url    => $opts{c} || $CFG::cgi_url,
-		htdocs_url => $opts{h} || $CFG::htdocs_url
+		dont_ask     => $opts{c} && $opts{h},
+		cgi_url      => $opts{c} || $CFG::cgi_url,
+		htdocs_url   => $opts{h} || $CFG::htdocs_url,
+		ldap_enabled => $opts{l} || $CFG::ldap_enabled,
+		ldap_base    => $opts{b} || $CFG::ldap_base,
+		ldap_server  => $opts{s} || $CFG::ldap_server,
+		ldap_uid     => $opts{u} || $CFG::ldap_uid,
 	);
 
 	create_passwd(
@@ -74,6 +78,11 @@ usage: perl install.pl [-p] [-v] [-c cgi-alias] [-h htdocs-alias]
        -v    verbose
        -c    takes default value for CGI webserver mapping
        -h    takes default value for htdocs webserver mapping
+
+       -l    enable LDAP account validation
+       -s    LDAP server
+       -b    LDAP search base
+       -u    LDAP uid attribute
        
        If -c and -h are given, installation is non interactive.
 
@@ -82,6 +91,12 @@ __EOF
 };
 
 sub hello {
+	if ( $CFG::OS == 0 ) {
+		# this does not work with ActiveState Perl Build 519
+		my $term = Term::Cap->Tgetent({ TERM => undef, OSPEED => 9600 });
+		$term->Tputs('cl',1, \*STDOUT);
+	}
+
 	my $blanks = " " x (46-length($CFG::VERSION));
 	my @d = localtime(time);
 	my $year = $d[5]+1900;	# shit, we have a year 10000 problem!
@@ -288,9 +303,13 @@ sub check_manifest {
 sub configure {
 	my %par = @_;
 	
-	my $dont_ask   = $par{dont_ask};
-	my $cgi_url    = $par{cgi_url};
-	my $htdocs_url = $par{htdocs_url};
+	my $dont_ask     = $par{dont_ask};
+	my $cgi_url      = $par{cgi_url};
+	my $htdocs_url   = $par{htdocs_url};
+	my $ldap_enabled = $par{ldap_enabled};
+	my $ldap_base    = $par{ldap_base};
+	my $ldap_server  = $par{ldap_server};
+	my $ldap_uid     = $par{ldap_uid};
 
 	my $root_dir = cwd();
 
@@ -346,6 +365,73 @@ sub configure {
 			text => "Webserver Script Alias for ./cgi-bin",
 			default => $cgi_url
 		);
+		
+		print "\n";
+		print "new.spirit can use an existing LDAP directory for\n";
+		print "user account validation. You will need Net::LDAP\n";
+		print "for this functionality.\n\n";
+		
+		$ldap_enabled = ask (
+			text    => "Do you want do use the LDAP account validation?",
+			default => ($ldap_enabled ? 'y' : 'n'),
+			answers => { 'y' => 1, 'n' => 0 },
+		);
+		
+		$ldap_server = ask (
+			text    => "LDAP server name",
+			default => $ldap_server
+		);
+		
+		$ldap_base   = ask (
+			text    => "LDAP search base",
+			default => $ldap_base,
+		);
+		
+		$ldap_uid    = ask (
+			text    => "LDAP username attribute",
+			default => $ldap_uid
+		);
+		
+		print "\n";
+
+		my $try = ask (
+			text    => "Should the installer now try to connect the\nserver with these values?",
+			default => 'n',
+			answers => { 'y' => 1, 'n' => 0 },
+		);
+		
+		if ( $try ) {
+			print "\n";
+			require "Net/LDAP.pm";
+
+			my $username = ask (
+				text    => "Enter a username to search for",
+			);
+
+			my $ldap = Net::LDAP->new (
+				$ldap_server,
+				onerror => 'die',
+			) or die "$@";
+
+	        	$ldap->bind;
+			
+			# search uid (we need the dn)
+	        	my $result = $ldap->search (
+				base   => $ldap_base,
+				filter => "$ldap_uid=$username"
+			);
+
+			die "username ambigious" if $result->count > 1;
+			die "username not found" if $result->count == 0;
+
+			# catch dn
+			my $entry = $result->shift_entry;
+			my $dn = $entry->dn;
+			
+			$ldap->unbind;
+			
+			print "\nIt works! DN of this user: $dn\n";
+		}
 	}
 	
 	# cut off trailing slashes
@@ -359,6 +445,16 @@ sub configure {
 	print "cgi-bin alias:  $cgi_url\n";
 	print "db module:      $db_module\n";
 	print "root directory: $root_dir\n";
+	
+	if ( not $ldap_enabled ) {
+		print "LDAP:           disabled\n";
+	} else {
+		print "LDAP:           enabled\n";
+		print "LDAP server:    $ldap_server\n";
+		print "LDAP base:      $ldap_base\n";
+		print "LDAP uid attr:  $ldap_uid\n";
+	}
+
 	print "\n";
 	
 	if ( not $dont_ask ) {
@@ -382,7 +478,11 @@ sub configure {
 			root_dir => $root_dir,
 			cgi_url => $cgi_url,
 			htdocs_url => $htdocs_url,
-			db_module => $db_module
+			db_module => $db_module,
+			ldap_enabled => $ldap_enabled,
+			ldap_server => $ldap_server,
+			ldap_base => $ldap_base,
+			ldap_uid => $ldap_uid,
 		}
 	);
 	
@@ -440,12 +540,23 @@ sub ask {
 	
 	my $text = $par{text};
 	my $default = $par{default};
-	
-	print "$text [ '$default' ] : ";
-	
-	my $value = <STDIN>;
-	
-	chomp $value;
-	
-	return $value || $default;
+	my $answers = $par{answers};
+
+	my $answers_text;
+	if ( $answers ) {
+		$answers_text = join ("', '", keys %{$answers});
+		$answers_text = "('$answers_text') ";
+	}
+
+	my $value;
+	while (1) {
+		print "$text $answers_text\[ '$default' ] : ";
+		$value = <STDIN>;
+		chomp $value;
+		$value ||= $default;
+		last if not $answers;
+		last if defined ($value = $answers->{$value});
+	}
+		
+	return $value;
 }
