@@ -1,0 +1,16 @@
+#-------=-------=---------------=---------------------------------------------
+# CGI
+#       x.objectname
+#
+# DESCRIPTION
+#       description
+#
+# INPUT
+#       $par1                   description
+#
+# OPTIONAL
+#       $par2                   description
+#
+#-----------------------------------------------------------------------------
+
+<?INTERFACE INPUT="" OPTIONAL="">

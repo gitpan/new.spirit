@@ -1,0 +1,22 @@
+#-------=-------=---------------=---------------------------------------------
+# INCLUDE
+#       x.objectname
+#
+# DESCRIPTION
+#       description
+#
+# INPUT
+#       $i_par1                 description
+#
+# OPTIONAL
+#       $i_par2                 description
+#
+# OUTPUT
+#       $o_par1                 description
+#
+#-----------------------------------------------------------------------------
+
+<?INCINTERFACE
+	INPUT=""
+	OPTIONAL=""
+	OUTPUT="">

@@ -1,0 +1,220 @@
+$Id: CHANGES,v 1.17 2001/03/05 17:11:32 joern Exp $
+
+1.99.17 2001/03/05 joern
+	Bugfixes:
+	- the CIPP BEGIN block, which sets the library path, was
+	  stripped off for syntax checking. So projects, which
+	  depend on a additional library path failed in compilation.
+	  This version of new.spirit REQUIRES now CIPP version 2.27
+
+1.99.16 2001/03/05 joern
+	Bugfixes:
+	- "Project Compilation" with dependency truncation did not
+	  delete the internal modules hash file. If a module was moved
+	  by hand, new.spirit complains about a double module definition,
+	  and even a project compilation did not fix this.
+	- BEGIN{} and/or END{} blocks were executed during Perl syntnax
+	  check, which sometimes makes the system hang.
+
+	Features:
+	- you can now define more than one additional perl library search
+	  directory by delimiting them with a colon.
+
+1.99.15 2001/02/27 joern
+	Bugfixes:
+	- the 'use_strict' attribute of CIPP modules was not always
+	  correctly initialized (enabled). Now this attribute should
+	  always default to 1.
+	- error formatting in case of a CIPP/new.spirit module name
+	  clashing was messed up
+
+1.99.14 2001/02/19 joern
+	Bugfixes:
+	- "Project Installation" did not install the prod/lib/
+	  directory
+	- "Project Installation" did not install the proper
+	  default database configuration
+	- first installation of a new module did throw an error message
+	- creation of image objects did not work
+	- project deletion without selection of a project entry was
+	  possible
+	- object creation using irregular names is prevented now
+	- project list is now sorted by project name instead of project
+	  description. This fixes also a bug: two projects with the
+	  same description were indistinguishable
+	- first time creation of a base configuration object causes
+	  an exception
+	- the NewSpirit::Object class did *always* set a lock on the
+	  object, even if this was an internal instantiation, e.g.
+	  for a "Project Compilation".
+
+	Features:
+	- timestamps of installed files (using "Project Installation")
+	  are now set to the source file timestamps. This make
+	  rsync's job easier.
+
+1.99.13 2001/02/15 joern
+	Bugfix:
+	- database connection code of generated modules was broken
+	- now new.spirit needs CIPP 2.19 or better, due to the
+	  extensions of dynamic database connections (which
+	  also fixes the bug stated above)
+	
+	ATTENTION:
+	----------
+	You must upgrade your production environments with the
+	shipped CIPP 2.19 release, because the CIPP::Runtime did
+	change. CGI programs created with this release WILL NOT
+	RUN with CIPP versions < 2.19 (resp. CIPP::Runtime < 0.36)
+
+
+1.99.12 2001/02/14 joern
+	Bugfixes:
+	- alternative database names did still not work.
+	- a htdocs mapping of '/' did produce wrong URLs
+
+	Features:
+	- base configuration objects have a new field for
+	  a additional perl library directory. So external private
+	  libraries can easily be included into your project.
+
+1.99.11 2001/02/13 joern
+	Bugfixes:
+	- missing Lock Files produce only warnings and no exceptions
+	  (this happens, if a project disappears from the filesystem.
+	   The thrown exception prevents from selecting another project,
+	   so we had a classical deadlock situation ;)
+	- creating a project where the project root dir alredy exists,
+	  but was not owned by the spirit webserver user, did not work,
+	  although if the user has write access
+	- dependency processing did sometimes compile too much objects,
+	  because transitive dependencies were not filtered enough
+	- prod replace function did not work properly
+
+1.99.10 2001/02/12 joern
+	Bugfixes:
+	- alternative database names did not work
+
+1.99.9 2001/02/11 joern
+	Features:
+	- bin/convert_cipp-img.pl can execute appropriate cvs
+	  commands for you
+
+1.99.8 2001/02/09 joern
+	Bugfixes:
+	- SQL object database assignment conversion (spirit 1.x ->
+	  new.spirit 2.x) did not work
+	- usage of Archive::Tar is replaced by a internal new.spirit function
+	  for copying directories recursively. This fixes the problelm
+	  with Archive::Tar under Windows platforms. Also this is much
+	  faster and more reliable than the Archive::Tar solution.
+
+	Cleanup:
+	- default mappings changed: /newspirit2 and /cgi-bin2
+	
+	Features:
+	- the object editor has a new popup entry for submitting:
+	  "Install (edited external)". Use this method, if you modified
+	  the object file with an external editor and want new.spirit
+	  to install this file, without saving the content of the
+	  object editor.
+	- there is a new user preference. The use can decide, if the
+	  editor submit popup should not be preselected with any entry,
+	  so the user must decide actively, which action should be
+	  performed.
+	- Link to the CHANGES file on the login page
+
+1.99.7 2001/02/07 joern
+	Cleanup:
+	- some local perl library path modifications in newspirit.conf
+	  are removed by mktardist.pl. I need them on my development system
+	  to work with the almost actual CIPP release, without need to
+	  install CIPP into my official perl library path.
+
+	Features:
+	- 'Project Installation' can now include SQL prod and src files.
+	  src files in that way, that a miniminal src tree is built, which
+	  can be used on the production system to execute SQL scripts and
+	  arbitrary SQL commands (of course, only if you install new.spirit
+	  on the production system for this purpose ;). This src tree only
+	  includes a base configuration, all database configuration files
+	  and SQL objects.
+
+1.99.6 2001/02/01 joern
+	Bugfixes:
+	- extended base configuration paramters
+	  - project root of production system
+	- Installation procedure did not copy images to
+	  the installation directory
+	- session preservation did not always work
+	- removed switch for omitting Include processing
+	  in 'Project Compilation'. Due to this, Include dependencies
+	  were broken
+	- create 'logs' directory in 'Project Installation'
+
+	Features:
+	- removed the NEWSPIRIT subdirectories. A new 'meta' subdirectory
+	  on project root toplevel takes the corresponding files. So the
+	  'src' tree ist free of non CVSable files, which makes life
+	  much easier
+	- object property files reside now in the same directory as the
+	  corresponding object file, with '.m' attached to the extension.
+	  So adding new files to CVS is easier.
+	- CIPP 2.16_01 is mandatory for this new.spirit release
+	- final filesystem structure: all files modified by the webserver
+	  are now inside the var tree
+
+1.99.5 2001/01/29 joern
+	Bugfixes:
+	- verbosity of include error output in dependency installation
+	  was too high
+	- optimized the builtin Perl syntax checker (solves open2
+	  resource problem unter Windows NT)
+
+	Features:
+	- Project Compilation:
+	  - user can decide, whether includes should
+	    be processed seperately (for error checking) or not
+	  - with or without deletion of the production tree
+	- upgraded shipped CIPP distribution to 2.15
+
+1.99.4 2001/01/25 joern
+	First release candiate.
+
+	Bugfixes:
+	- dependency processing had an esoteric bug. Sometimes dependent
+	  objects were not processed
+	
+	Features:
+	- project installation. If you're on a windows box, refer to
+	  the release notes.
+	- needed Perl modules are bundled with the new.spirit
+	  distribution
+
+1.99.2 2000/?/? joern
+	Bugfixes:
+	- install.pl did not use the determined DB_File module
+	  itself. instead the module of our development environment
+	  was used
+	- cipp-html objects now always depend on the base
+	  configuration
+	- renamed /icons URL to /i
+	  => shorter HTML code
+	  => no clashing with Apache standard mapping "/icons"
+
+	Features:
+	- project compilation now shows number of objects
+	  to process
+	- creation of cipp-html objects with .css extension
+	  now possible
+
+1.99.1 2000/08/10 joern
+	First dimedis internal beta release
+	- basic project installation stuff
+
+1.99.0 2000/xx/xx joern
+	First internal alpha release, lacks many features, e.g.
+	- cvs support
+	- project installation
+	- generic tool interface
+

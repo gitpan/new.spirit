@@ -1,0 +1,94 @@
+$Id: TODO,v 1.20 2001/03/07 17:48:30 joern Exp $
+
+- BUG
+  - dbshell.pl auf src Dateien geht nicht
+
+- BUG !!!
+  - mdd komplett übersetzen hängt!
+
+- BUG:
+  <?GETURL> cipp-css funzt nich
+
+- CIPP "Created/Copyright" Kommentar
+  - warum nicht immer da?
+
+- BUG
+  - Wenn User sich selbst die Rechte an seinem letzten Projekt
+    entzieht, kann er sich nicht mehr einloggen (da keine Rechte
+    auf das aktuell gewählte Projekt)
+
+- BUG !!!
+  - CIPP::Manual nicht korrekt, wg. !HTTPHEADER
+
+- <?REQUIRE>
+  - Compile-Zeit Check auf Modulexistenz?
+
+- CIPP Bug:
+  - <?SQL VAR=" $bla, $foo"> produziert fehlerhaften Code (wg. Leerzeichen)
+
+- CIPP:
+  <?GETURL> um PATH_INFO erweitern (für Download Dateinamen)
+
+- Projekt Übersetzen
+  - Includes nicht unabhängig von CGI's übersetzen. Abhängigkeitsproblem
+    anders lösen!
+  - Projekt im Namen des Fensters
+
+- Treeview:
+  - Suchen nach Objektnamen
+  - QuickAccess Liste
+
+- Doku
+  - <?!HTTPHEADER>
+
+- Project Installation
+
+  - SrcReplace für entsprechend konfigurierte Objekte. Für das
+    Default Datenbankobjekt ist das nicht nötig, da die entsprechende
+    x.configuration mit dem Verweis auf die richtige Datenbank
+    erzeugt wird. Für andere Datenbankobjekte muß dies aber noch
+    implementiert werden.
+
+- Session beenden
+  - alle Kindfenster schließen
+
+- Projekt Installation
+  - Objektnamen in Ausgabe mit Editor verlinken
+  - Übersetzungsdauer ausgeben
+
+- CIPP
+  - objektabhängig HTTP Header definieren
+
+- x.configuration besser nicht löschbar
+
+- BUG: dbshell.pl
+  - Passworteingabe unter Windows NT funktioniert nicht
+
+- Save Fenster
+  - URL des Objektes zum Testen ausgeben
+
+- Fehlerausgabe (Übersetzen)
+  - show Perl Source mit Zeilennummern
+
+- Browser
+  - Tree Refresh
+  - JS zum Öffnen, verhindert mtl. Maustaste
+
+- Hauptmenü: aktives Projekte in der Projektauswahlliste markieren
+
+- globale Copyright Vorgabe
+
+- Log Objekt
+
+- CIPP Log Direktzugang
+
+- Objekt umbenennen
+
+- dbshell: 0.E0 wech machen
+
+- Modified Indicator bei Properties einbauen
+
+- CIPP
+  - filesystem caching of preprocessed Includes 
+  - last SQL; dokumentieren -> CIPP Befehl dafür kreiren
+  - Datenbankconnections dynamisch machen
