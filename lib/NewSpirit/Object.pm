@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.51.2.1 2001/09/26 08:24:52 joern Exp $
+# $Id: Object.pm,v 1.51.2.2 2001/10/09 10:03:01 joern Exp $
 
 package NewSpirit::Object;
 
@@ -685,6 +685,7 @@ __HTML
 			$self->{project_cgi_dir} :
 			$self->{project_htdocs_dir};
 
+		$base_dir =~ s!/$!!;
 		$install_file =~ s!^$base_dir/!!;
 
 		if ( $base_config_data->{base_server_name} ) {
@@ -999,6 +1000,8 @@ sub editor_function_block {
 		$properties_link = 0;
 		$properties_color = "bgcolor=$CFG::INACTIVE_COLOR";
 	}
+
+	$delete_link = 0 if $self->{object} eq 'configuration.cipp-base-config';
 
 	# table start
 

@@ -1,4 +1,4 @@
-# $Id: Project.pm,v 1.18.2.1 2001/09/26 08:24:52 joern Exp $
+# $Id: Project.pm,v 1.18.2.2 2001/10/09 10:03:01 joern Exp $
 
 package NewSpirit::Project;
 
@@ -443,6 +443,10 @@ sub event_new {
 			-default => $data{$key}
 		);
 	}
+	
+	# remove multiple and trailing slashes
+	$data{root_dir} =~ s!/+!/!g;
+	$data{root_dir} =~ s!/$!!;
 	
 	NewSpirit::std_header (
 		page_title => "Project Creation: '$data{project_name}'",

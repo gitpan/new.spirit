@@ -1,5 +1,5 @@
 
-# $Id: LKDB.pm,v 1.18 2000/07/11 14:42:31 joern Exp $
+# $Id: LKDB.pm,v 1.18.2.1 2001/10/09 10:03:01 joern Exp $
 
 package NewSpirit::LKDB;
 
@@ -13,8 +13,15 @@ use Fcntl ':flock';
 my $db_module;
 
 BEGIN {
- 	$db_module = $CFG::db_module || 'DB_File';
- 	require "$db_module.pm";
+ 	$db_module = $CFG::db_module;
+ 	require "$db_module.pm" if $db_module ne '';
+}
+
+sub set_db_module {
+	my $type = shift;
+	my ($module) = @_;
+	$db_module = $module;
+	require "$db_module.pm";
 }
 
 sub new {

@@ -1,6 +1,6 @@
 #!/usr/dim/perl/bin/perl
 
-# $Id: install.pl,v 1.10 2001/07/24 15:35:26 joern Exp $
+# $Id: install.pl,v 1.10.2.1 2001/10/09 10:03:01 joern Exp $
 
 require 5.004_04;
 
@@ -152,6 +152,7 @@ sub create_passwd {
 		message ("creating new $CFG::passwd_file");
 		unlink $CFG::passwd_file;
 		require "NewSpirit/Passwd.pm";
+		NewSpirit::LKDB->set_db_module($CFG::db_module);
 	        my $p = new NewSpirit::Passwd;
 	        $p->add ('spirit', 'spirit', {PROJECT=>1,USER=>1},{});
 		message_ok();
