@@ -1,4 +1,4 @@
-# $Id: Install.pm,v 1.18 2001/08/13 15:43:36 joern Exp $
+# $Id: Install.pm,v 1.19.2.2 2001/09/21 14:00:33 joern Exp $
 
 package NewSpirit::Object::Install;
 
@@ -32,6 +32,7 @@ use File::Find;
 use File::Path;
 use File::Basename;
 use File::Copy;
+use Config;
 use Cwd;
 
 sub get_compile_dependant_objects {
@@ -220,6 +221,7 @@ sub install_project_ctrl {
 	my $install_root_dir = "$project_root_dir/$install_dir";
 	my $install_prod_dir = "$install_root_dir/prod";
 	my $install_src_dir  = "$install_root_dir/src";
+	my $install_cgi_dir = "$install_root_dir/prod/cgi-bin";
 
 	# print information text
 
@@ -438,6 +440,24 @@ sub install_project_ctrl {
 	$mangled_default_base_conf->install_dependant_objects;
 	print "</BLOCKQUOTE></FONT>\n";
 
+	if ( $mangled_default_base_conf->{dependency_installation_errors} ) {
+		print "$CFG::FONT<FONT COLOR=red>",
+		      "<b>Some objects have errors</b>",
+		      "</FONT><p>";
+
+		foreach my $object (
+		    sort keys
+		    %{$mangled_default_base_conf->{dependency_installation_errors}} ) {
+			print "<p>$CFG::FONT<b>",
+			      $self->dotted_notation ($object),
+			      "</b></FONT><br>\n";
+			$self->print_install_errors (
+				$mangled_default_base_conf->{dependency_installation_errors}
+				     ->{$object}
+			);
+		}
+	}
+
 	# build static dbshell.pl
 
 	$self->build_static_dbshell (
@@ -445,15 +465,17 @@ sub install_project_ctrl {
 	);
 
 	# shebang replace?
-	if ( $self->{project_base_config_data}->{base_prod_shebang} ) {
-		print "<p><b>Replacing shebang line of Perl programs...</b><p>\n";
+	if ( $self->{project_base_config_data}->{base_prod_shebang} or
+	     $self->{project_base_config_data}->{base_prod_shebang_map} ) {
+		print "<p><b>Replacing shebang line of programs in cgi-bin...</b><p>\n";
 
 		print "<script>self.window.scroll(0,5000000)</script>\n";
 		print "<script>self.window.scroll(0,5000000)</script>\n";
 
 		$self->replace_shebang (
 			shebang => $self->{project_base_config_data}->{base_prod_shebang},
-			dir     => $install_prod_dir
+			shebang_map => $self->{project_base_config_data}->{base_prod_shebang_map},
+			dir     => $install_cgi_dir
 		);
 	}		
 
@@ -469,12 +491,38 @@ sub install_project_ctrl {
 
 sub replace_shebang {
 	my $self = shift;
-	
 	my %par = @_;
-	
-	my ($shebang, $dir) = @par{'shebang', 'dir'};
+	my  ($shebang, $shebang_map, $dir) =
+	@par{'shebang','shebang_map','dir'};
+
+	$shebang ||= $Config{'perlpath'};
 
 	$shebang = "#!$shebang" if $shebang !~ /^#!/;
+
+	my %map;
+
+	print "<blockquote>This is the shebang map:<br><font face=courier><pre>\n";
+	if ( $shebang_map ) {
+		foreach my $line ( split (/[\n\r]/, $shebang_map ) ) {
+			my ($object, $shb) = split (/\s+/, $line, 2);
+			$object =~ s!^[^\.]+\.!$self->{project}.!;
+			$object =~ tr!.!/!;
+			$object = "$dir/$object";
+			$object =~ s!/+!/!g;
+			$shb = "#!$shebang" if $shebang !~ /^#!/;
+			$map{$object} = $shb;
+			
+			$object =~ s!^$dir!\$CGI_DIR!;
+			print "$object => $shb\n";
+		}
+	}
+	print "</pre></font></blockquote>\n";
+
+#print "<pre><font face=courier>\n";
+#use Data::Dumper; print Dumper(\%map);
+
+	my $default_shebang = $shebang;
+
 
 	find (
 		sub {
@@ -489,6 +537,18 @@ sub replace_shebang {
 			close IN;
 			
 			my ($atime, $mtime) = (stat $filename)[8,9];
+			
+			my $file_wo_ext = $filename;
+			$file_wo_ext =~ s!\.[^\.]+$!!;
+
+#print "\ncheck: dir=$dir\ncheck:file_wo_ext=$file_wo_ext\n";
+
+			$shebang = $map{$dir} ||
+				   $map{$file_wo_ext} ||
+				   $default_shebang;
+
+#print "$filename -> $shebang\n";
+
 			$text =~ s/^#\!.*perl/$shebang/;
 			
 			open (OUT, ">$filename")
@@ -500,6 +560,8 @@ sub replace_shebang {
 		},
 		$dir
 	);
+
+#print "</font></pre>\n";
 
 	1;
 }

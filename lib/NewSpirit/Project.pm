@@ -1,4 +1,4 @@
-# $Id: Project.pm,v 1.18 2001/05/15 10:26:42 joern Exp $
+# $Id: Project.pm,v 1.18.2.1 2001/09/26 08:24:52 joern Exp $
 
 package NewSpirit::Project;
 
@@ -534,6 +534,13 @@ __HTML
 	} else {
 		chmod 0775, "$data{root_dir}/src";
 		chmod 0775, "$data{root_dir}/prod/logs";
+	}
+
+	# create project meta dir, no error checking necessary
+	if ( not -d "$data{root_dir}/meta" ) {
+		mkdir "$data{root_dir}/meta", 0775;
+	} else {
+		chmod 0775, "$data{root_dir}/meta";
 	}
 
 	# Create project configuration

@@ -1,4 +1,4 @@
-# $Id: Object.pm,v 1.50 2001/08/07 10:19:35 joern Exp $
+# $Id: Object.pm,v 1.51.2.1 2001/09/26 08:24:52 joern Exp $
 
 package NewSpirit::Object;
 
@@ -305,6 +305,7 @@ sub new {
 		project_root_dir => $project_root_dir,
 		project_src_dir => "$project_root_dir/src",
 		project_prod_dir => $prod_dir,
+		project_template_dir => "$project_root_dir/src/tmpl",
 		project_cgi_base_dir => "$prod_dir/cgi-bin",
 		project_htdocs_base_dir => "$prod_dir/htdocs",
 		project_cgi_dir => "$prod_dir/cgi-bin/$project",
@@ -2918,15 +2919,16 @@ sub install_dependant_objects {
 					base_config_object => $self->{project_base_conf}
 				);
 			};
+			my $exc = $@;
 
 			# this is for progress output
 			my $print_object = $self->dotted_notation ($object);
 
 			# catch "object does not exist" exception
-			if ( $@ =~ /^object_does_not_exist/ ) {
+			if ( $exc =~ /^object_does_not_exist\t(.*)/ ) {
 				print "<FONT COLOR=red><B>NOT&nbsp;OK</B></FONT>&nbsp;&nbsp;$print_object<BR>\n";
 				$self->{dependency_installation_errors}->{$object}
-				     ->{formatted} = \"Object does not exist";
+				     ->{formatted} = \"$1";
 				next;
 			} else {
 				die $@ if $@;
@@ -3472,9 +3474,23 @@ sub create {
 	
 	# create from template, if one exists for this object type
 
+	# first: try a project specific templates
 	my $template_file
-		= "$CFG::template_dir/$self->{object_type}.template";
+		= "$self->{project_template_dir}/$self->{object_type}.$self->{object_type}";
 	my $template_meta_file
+		= "$self->{project_template_dir}/$self->{object_type}.$self->{object_type}.m";
+
+	copy ($template_file, $self->{object_file})
+		if -r $template_file;
+	copy ($template_meta_file, $self->{object_meta_file})
+		if -r $template_meta_file;
+
+	return if -r $self->{object_file};
+	
+	# then system wide template
+	$template_file
+		= "$CFG::template_dir/$self->{object_type}.template";
+	$template_meta_file
 		= "$CFG::template_dir/$self->{object_type}.meta";
 	
 	copy ($template_file, $self->{object_file})
@@ -3483,7 +3499,7 @@ sub create {
 		if -r $template_meta_file;
 
 	return if -r $self->{object_file};
-	
+
 	# otherwise create an empty file
 
 	my $fh = new FileHandle;

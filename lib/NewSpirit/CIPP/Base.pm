@@ -1,4 +1,4 @@
-# $Id: Base.pm,v 1.22 2001/05/15 10:26:42 joern Exp $
+# $Id: Base.pm,v 1.22.2.1 2001/09/21 11:44:09 joern Exp $
 
 package NewSpirit::CIPP::Base;
 
@@ -53,19 +53,25 @@ my %FIELD_DEFINITION = (
 	},
 	base_prod_root_dir => {
 		description => 'Project root directory of production system</b><br>'.
-			       '(leave empty if this does not differ from<br>'.
+			       '(leave empty if this does not differ from'.
 			       'your local development system)<b>',
 		type => 'text'
-	},
-	base_prod_shebang => {
-		description => 'Shebang line of production system</b><br>'.
-			       '(leave empty if this does not differ from<br>'.
-			       'your local development system)<b>',
-		type => 'text',
 	},
 	base_history_size => {
 		description => "Object history limit (Default $CFG::default_history_size)",
 		type => 'text 4',
+	},
+	base_prod_shebang => {
+		description => 'Default Shebang line of production system</b><br>'.
+			       '(leave empty if this does not differ from'.
+			       'your local development system)<b>',
+		type => 'text',
+	},
+	base_prod_shebang_map => {
+		description => 'Map for advanced Shebang Line settings</b><br>'.
+			       '(whitespace delimited, 2 fields, left: folder or object name '.
+			       'in dotted notation, right: corresponding shebang line)',
+		type => 'textarea',
 	},
 );
 
@@ -79,7 +85,7 @@ my @FIELD_ORDER_NON_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_error_show',
 	'base_error_text', 'base_http_header',  'base_perl_lib_dir',
 	'base_default_db', 'base_install_dir', 'base_prod_root_dir',
-	'base_prod_shebang',
+	'base_prod_shebang', 'base_prod_shebang_map',
 );
 use Carp;
 use NewSpirit::Object::Record;
