@@ -49,6 +49,8 @@ htdocs/i/icon_dir_open.gif
 htdocs/i/icon_log.gif
 htdocs/i/icon_query.gif
 htdocs/i/icon_querynew.gif
+htdocs/i/icon_po.gif
+htdocs/i/icon_text-domain.gif
 htdocs/i/spirit-logo-alt.gif
 htdocs/i/spirit-logo.gif
 htdocs/i/tree_eline.gif
@@ -87,6 +89,8 @@ lib/NewSpirit/CIPP/Prep.pm
 lib/NewSpirit/CIPP/Config.pm
 lib/NewSpirit/CIPP/Module.pm
 lib/NewSpirit/CIPP/ProdReplace.pm
+lib/NewSpirit/CIPP/PO.pm
+lib/NewSpirit/CIPP/TextDomain.pm
 lib/NewSpirit/Lock.pm
 lib/NewSpirit/Object
 lib/NewSpirit/Object/Text.pm

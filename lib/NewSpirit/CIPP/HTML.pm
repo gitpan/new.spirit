@@ -1,4 +1,4 @@
-# $Id: HTML.pm,v 1.21 2002/08/30 10:11:39 joern Exp $
+# $Id: HTML.pm,v 1.24 2005/09/21 09:12:49 joern Exp $
 
 package NewSpirit::CIPP::HTML;
 
@@ -49,15 +49,25 @@ sub install_file {
 	my $ok = 1;
 	$self->{install_errors} = {};
 
+	my $shebang = $self->{project_base_config_data}
+			   ->{base_prod_shebang} ||
+			   '#!'.$Config{'perlpath'};
+
+	my $trunc_ws = $self->{project_base_config_data}
+			    ->{base_trunc_ws};
+
 	my $CIPP = CIPP::Compile::NewSpirit->new (
 		program_name  	=> $self->{object_name},
 		project 	=> $self->{project},
 		start_context 	=> 'html',
+		shebang       	=> $shebang,
+		trunc_ws        => $trunc_ws,
 		object_type   	=> 'cipp-html',
 		project_root  	=> $self->{project_root_dir},
+		project_prod	=> $self->{project_prod_dir},
+		config_dir	=> $self->{project_config_dir},
 		no_http_header  => 1,
-		lib_path        => $self->{project_base_config_data}
-				        ->{base_perl_lib_dir},
+		lib_path        => $self->get_runtime_lib_path,
 		url_par_delimiter => $self->{project_base_config_data}
 				        ->{base_url_par_delimiter},
 	);
@@ -85,14 +95,7 @@ sub install_file {
 					brief => $self->{command_line_mode}
 				);
 		}
-#		my $perl_code_sref = $CIPP->get_perl_code_sref;
-#		open (OUT, "> /tmp/cippdebug");
-#		print OUT $$perl_code_sref;
-#		close OUT;
-
 	}
-
-#	$self->{_perl_code} = $CIPP->get_perl_code_sref;
 
 	return $ok;
 }

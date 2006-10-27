@@ -275,7 +275,7 @@ sub execute {
 	$cmd =~ tr/A-Z/a-z/;
 
 	return if $cmd eq 'quit' or $cmd eq 'exit';
-	
+
 	eval {
 		my $method = "cmd_$cmd";
 		$method = "cmd_system" if $command =~ m/^\!/;
@@ -287,6 +287,10 @@ sub execute {
 		# it using the select schema. Maybe the
 		# command returns a result set (Sybase often
 		# does ;)
+		
+		#-- probably unescape the first character
+		#-- (probably it's an escaped dbshell command)
+		$command =~ s/^\\//;
 		$self->cmd_select ($command, $cmd);
 	} elsif ( $@ ) {
 		die $@;

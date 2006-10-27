@@ -54,16 +54,19 @@ sub install_file {
 			   ->{base_prod_shebang} ||
 			   '#!'.$Config{'perlpath'};
 
+	my $trunc_ws = $self->{project_base_config_data}
+			    ->{base_trunc_ws};
+
 	my $CIPP = CIPP::Compile::NewSpirit->new (
 		program_name  	=> $self->{object_name},
 		project 	=> $self->{project},
 		start_context 	=> 'html',
 		shebang       	=> $shebang,
+		trunc_ws        => $trunc_ws,
 		object_type   	=> 'cipp',
 		project_root  	=> $self->{project_root_dir},
 		mime_type	=> $mime_type,
-		lib_path        => $self->{project_base_config_data}
-				        ->{base_perl_lib_dir},
+		lib_path        => $self->get_runtime_lib_path,
 		url_par_delimiter => $self->{project_base_config_data}
 				        ->{base_url_par_delimiter},
 	);

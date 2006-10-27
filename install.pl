@@ -1,4 +1,4 @@
-# $Id: install.pl,v 1.14 2002/04/08 12:17:35 joern Exp $
+# $Id: install.pl,v 1.15 2004/09/14 09:08:40 joern Exp $
 
 require 5.004_04;
 
@@ -24,7 +24,7 @@ main: {
 	hello();
 
 	my %opts;
-	my $ok = getopts ('lpvc:h:b:s:', \%opts);
+	my $ok = getopts ('lpvc:h:b:s:V:', \%opts);
 
 	$VERBOSE = 1 if $opts{v};
 
@@ -43,6 +43,7 @@ main: {
 		ldap_base    => $opts{b} || $CFG::ldap_base,
 		ldap_server  => $opts{s} || $CFG::ldap_server,
 		ldap_uid     => $opts{u} || $CFG::ldap_uid,
+		ldap_version => $opts{V} || $CFG::ldap_version,
 	);
 
 	create_passwd(
@@ -83,6 +84,7 @@ usage: perl install.pl [-p] [-v] [-c cgi-alias] [-h htdocs-alias]
        -s    LDAP server
        -b    LDAP search base
        -u    LDAP uid attribute
+       -V    LDAP protocol version (1 or 2)
        
        If -c and -h are given, installation is non interactive.
 
@@ -310,6 +312,7 @@ sub configure {
 	my $ldap_base    = $par{ldap_base};
 	my $ldap_server  = $par{ldap_server};
 	my $ldap_uid     = $par{ldap_uid};
+	my $ldap_version = $par{ldap_version};
 
 	my $root_dir = cwd();
 
@@ -392,6 +395,12 @@ sub configure {
 			default => $ldap_uid
 		);
 		
+		$ldap_version = ask (
+			text    => "LDAP protocol version",
+			default => $ldap_version,
+			answers => { 1 => 1, 2 => 2 },
+		);
+
 		print "\n";
 
 		my $try = ask (
@@ -411,6 +420,7 @@ sub configure {
 			my $ldap = Net::LDAP->new (
 				$ldap_server,
 				onerror => 'die',
+				version => $ldap_version,
 			) or die "$@";
 
 	        	$ldap->bind;
@@ -453,6 +463,7 @@ sub configure {
 		print "LDAP server:    $ldap_server\n";
 		print "LDAP base:      $ldap_base\n";
 		print "LDAP uid attr:  $ldap_uid\n";
+		print "LDAP version:   $ldap_version\n";
 	}
 
 	print "\n";
@@ -483,6 +494,7 @@ sub configure {
 			ldap_server => $ldap_server,
 			ldap_base => $ldap_base,
 			ldap_uid => $ldap_uid,
+			ldap_version => $ldap_version,
 		}
 	);
 	

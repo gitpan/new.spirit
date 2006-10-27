@@ -287,6 +287,27 @@ sub check_for_perl_errors {
 	1;
 }
 
+sub get_runtime_lib_path {
+	my $self = shift;
+	
+	my $add_lib_dir =
+		$self->{project_base_config_data}
+		     ->{base_perl_lib_dir};
+
+	my $add_prod_dir =
+		$self->{project_base_config_data}
+		     ->{base_add_prod_dir};
+
+	my $project_root = $self->{project_lib_dir};
+	
+	my $lib_path = "$add_lib_dir:$add_prod_dir:$project_root";
+	
+	$lib_path =~ s/:+/:/g;
+	$lib_path =~ s/^://g;
+	
+	return $lib_path;
+}
+
 1;
 
 

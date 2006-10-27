@@ -1,5 +1,51 @@
 Changes of new.spirit
 
+2.2.1 Mon Oct 31 2005, joern
+        Features:
+        - Initial Perl Statement for database configuration
+          objects (forward-ported from new.spirit 2.0.x)
+
+2.2.0 Wed Sep 21 2005, joern
+	Features:
+	- Base configuration:
+	  - switch to enable XHTML conform code generation
+	  - switch to enable whitespace truncation around
+	    CIPP tags
+
+2.1.26 Tue Aug 9 2005, joern
+	Bugfix:
+	- Sometimes a project dist installation the cipp.conf
+	  was not replaced with the proper version of the
+	  production system, due to a wrong cache check.
+
+2.1.25 Tue Nov 9 2004, joern
+	Features:
+        - dbshell.pl: escape internal dbshell.pl commands with
+          a backslash, e.g. \set, to pass the command to the
+          database although it's an internal dbshell.pl command.
+
+2.1.24 Thu Nov 4 2004, joern
+	Bugfixes:
+	- project installation: HTML files were generated in the wrong
+          context (config files of the development system instead of
+          production system)
+
+2.1.23 Thu Nov 4 2004, joern
+	Features:
+	- base configuration: automatcially add #! to the shebang
+	  line if missing
+
+2.1.22 Fri Sep 10 2004, joern
+	Features:
+	- support for LDAP v1 and v2, configurable at
+	  installation time
+
+2.1.20	Thu Aug 21 2003, joern
+        Features:
+        - save_filter_command is executed after installation, not
+          only after saving. This way the filter is also triggered
+          if you use the newspirit client programm.
+
 2.1.19  Tue Aug 12 2003, joern
 	Bugfixes:
 	- "Project compilation" created "html.m" files for folders

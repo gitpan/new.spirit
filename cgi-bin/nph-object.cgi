@@ -1,6 +1,6 @@
-#!/usr/dim/perl/bin/perl
+#!/usr/dim/perl/5.8/bin/perl
 
-# $Id: nph-object.cgi,v 1.30 2002/08/26 14:59:51 joern Exp $
+# $Id: nph-object.cgi,v 1.31 2004/09/14 09:08:03 joern Exp $
 
 use strict;
 BEGIN {

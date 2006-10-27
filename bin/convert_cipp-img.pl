@@ -1,4 +1,4 @@
-#!/usr/dim/perl/bin/perl
+#!/usr/dim/perl/5.8/bin/perl
 
 use strict;
 use File::Find;

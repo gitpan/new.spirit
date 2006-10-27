@@ -1,6 +1,6 @@
 package NewSpirit::CIPP::DB;
 
-$VERSION = "0.01";
+$VERSION = "0.02";
 @ISA = qw(
 	NewSpirit::Object::Record
 	NewSpirit::CIPP::ProdReplace
@@ -37,12 +37,16 @@ my %FIELD_DEFINITION = (
 		description => 'Initial SQL Statement',
 		type => 'textarea'
 	},
+	db_init_perl => {
+		description => 'Initial Perl Statements<br>($dbh is given)',
+		type => 'textarea'
+	},
 );
 
 my @FIELD_ORDER = (
 	'db_source', 'db_user', 'db_pass',
 	'db_autocommit', 'db_cache_enable',
-	'db_env', 'db_init'
+	'db_env', 'db_init', 'db_init_perl'
 );
 
 use Carp;
@@ -158,11 +162,14 @@ sub get_install_filename {
 
 sub install_file {
 	my $self = shift;
+	my ($noupdate_check) = @_;
 
 	my $prod_replace;
 	return 1 if not $prod_replace = $self->installation_allowed;	# prod replace
-	return 2 if $prod_replace != 2 and $self->is_uptodate;
-	
+	if ( !$noupdate_check ) {
+		return 2 if $prod_replace != 2 and $self->is_uptodate;
+	}
+
 	# first we install ourself with our real name
 	my $install_file = $self->get_install_filename;
 	return 1 if not $install_file;
@@ -214,10 +221,15 @@ sub real_install_file {
 	my $db_user		= $data->{db_user};
 	my $db_autocommit	= $data->{db_autocommit};
 	my $db_init		= $data->{db_init};
+        my $db_init_perl        = $data->{db_init_perl};
 
 	foreach my $x ( $db_source, $db_user, $db_autocommit, $db_init ) {
 		$x =~ s/'/\\'/g;
 	}
+
+        my $init_perl_sub = $db_init_perl =~ /\S/ ?
+            qq[sub { my (\$dbh) = shift; $db_init_perl }] :
+            qq[''];
 
 	print $fh <<__EOF;
 my \$_cipp_password;
@@ -227,7 +239,8 @@ my \$_cipp_password;
 	user => '$db_user',
 	password => \$_cipp_password,
 	autocommit => $db_autocommit,
-	init => q{$db_init}
+	init => q{$db_init},
+        init_perl => $init_perl_sub,
 }
 __EOF
 

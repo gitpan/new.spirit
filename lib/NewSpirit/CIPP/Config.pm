@@ -1,4 +1,4 @@
-# $Id: Config.pm,v 1.13 2003/01/30 16:25:50 joern Exp $
+# $Id: Config.pm,v 1.14 2004/09/10 12:51:22 joern Exp $
 
 package NewSpirit::CIPP::Config;
 
@@ -53,7 +53,8 @@ sub install_file {
 	$$perl_code_sref = "no strict;\n".$$perl_code_sref;
 
 	my $pc = CIPP::Compile::PerlCheck->new (
-		directory => $self->{project_config_dir}
+		directory => $self->{project_config_dir},
+		lib_path  => $self->get_runtime_lib_path,
 	);
 	
 	my $error_sref = $pc->check (

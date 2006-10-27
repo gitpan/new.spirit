@@ -1,4 +1,4 @@
-# $Id: Passwd.pm,v 1.17 2001/10/29 15:49:18 joern Exp $
+# $Id: Passwd.pm,v 1.18 2004/09/14 09:08:40 joern Exp $
 
 package NewSpirit::Passwd;
 
@@ -143,6 +143,7 @@ sub ldap_check_password {
         	$ldap = Net::LDAP->new (
 			$CFG::ldap_server,
 			onerror => 'die',
+			version => $CFG::ldap_version,
 		) or die "$@";
 
         	$ldap->bind;
@@ -166,6 +167,7 @@ sub ldap_check_password {
 		$ldap = Net::LDAP->new (
 			$CFG::ldap_server,
 			onerror => 'die',
+			version => $CFG::ldap_version,
 		) or die "$@";
 
 		$ldap->bind (

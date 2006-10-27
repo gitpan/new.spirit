@@ -85,6 +85,18 @@ my %FIELD_DEFINITION = (
 		description => 'Use UTF8 character set',
 		type => "switch",
 	},
+	base_xhtml => {
+		description => 'Generate XHTML conform code',
+		type => "switch",
+	},
+	base_trunc_ws => {
+		description => 'Truncate whitespace around CIPP tags',
+		type => "switch",
+	},
+	base_cipp2_runtime => {
+		description => 'Load CIPP2 Runtime for compatability',
+		type => "switch",
+	},
 	_base_project => {
 		type => 'text',
 	},
@@ -97,8 +109,9 @@ my @FIELD_ORDER_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_server_name', 'base_error_show',
 	'base_error_text', 'base_http_header', 'base_perl_lib_dir',
 	'base_add_prod_dir',
-	'base_default_db', 'base_url_par_delimiter', 'base_utf8',
-	'base_prod_shebang',
+	'base_default_db', 'base_url_par_delimiter',
+	'base_utf8', 'base_xhtml', 'base_trunc_ws',
+	'base_cipp2_runtime','base_prod_shebang',
 	'base_history_size', '_base_project', '_base_server',
 );
 
@@ -106,7 +119,9 @@ my @FIELD_ORDER_NON_DEFAULT_CONFIG = (
 	'base_doc_url', 'base_cgi_url', 'base_error_show',
 	'base_error_text', 'base_http_header',  'base_perl_lib_dir',
 	'base_add_prod_dir',
-	'base_default_db', 'base_url_par_delimiter', 'base_utf8',
+	'base_default_db', 'base_url_par_delimiter',
+	'base_utf8', 'base_xhtml', 'base_trunc_ws',
+	'base_cipp2_runtime',
 	'base_install_dir', 'base_prod_root_dir',
 	'base_prod_shebang', 'base_prod_shebang_map',
 );
@@ -205,7 +220,10 @@ sub get_install_filename {
 sub install_file {
 	my $self = shift;
 	
-	return 2 if $self->is_uptodate;
+# Das raus hier! Bei Project Install wird die Datei als
+# uptodate gemeldet und überschreibt dann nicht die
+# Ziel-Base-Config. RIESENSCHEISSE!
+#	return 2 if $self->is_uptodate;
 
 	my $data = $self->get_data;
 	
@@ -234,8 +252,11 @@ sub install_file {
 	$base_cgi_url = "" if $base_cgi_url eq '/';
 
 	my $base_url_par_delimiter = $data->{base_url_par_delimiter} || '&';
-	my $base_utf8 = $data->{base_utf8} || 0;
-
+	my $base_utf8  = $data->{base_utf8} || 0;
+	my $base_xhtml = $data->{base_xhtml} || 0;
+	my $base_trunc_ws = $data->{base_trunc_ws} || 0;
+	my $base_cipp2_runtime = $data->{base_cipp2_runtime} || 0;
+	
 	my $error_show = $data->{base_error_show};
 	my $error_text = $data->{base_error_text};
 	$error_text =~ s/\{/\\{/g;
@@ -269,8 +290,8 @@ sub install_file {
 	config_dir	=> '$prod_dir/config',
 	inc_dir		=> '$prod_dir/inc',
 	lib_dir		=> '$prod_dir/lib',
-	log_dir		=> '$prod_dir/log',
-	log_file	=> '$prod_dir/log/cipp.log',
+	log_dir		=> '$prod_dir/logs',
+	log_file	=> '$prod_dir/logs/cipp.log',
 	cgi_url		=> '$base_cgi_url',
 	doc_url		=> '$base_doc_url',
 	add_lib_dirs    => [ qw($base_perl_lib_dir) ],
@@ -281,6 +302,9 @@ sub install_file {
 	cipp_compiler_version => '$CIPP::VERSION',
  	url_par_delimiter => '$base_url_par_delimiter',
 	utf8		=> $base_utf8,
+	xhtml		=> $base_xhtml,
+	trunc_ws	=> $base_trunc_ws,
+	cipp2_runtime   => $base_cipp2_runtime,
 }
 __EOF
 	} else {
@@ -309,6 +333,9 @@ __EOF
 	cipp_compiler_version => '$CIPP::VERSION',
  	url_par_delimiter => '$base_url_par_delimiter',
 	utf8		=> $base_utf8,
+	xhtml		=> $base_xhtml,
+	trunc_ws	=> $base_trunc_ws,
+	cipp2_runtime   => $base_cipp2_runtime,
 }
 __EOF
 	}
@@ -322,7 +349,7 @@ __EOF
 			object => $data->{base_default_db},
 			base_config_object => $self->{project_base_conf}
 		);
-		$o->install_file;
+		$o->install_file(1);	# force installation, no fs uptodate check
 	} else {
 		# otherwise we delete the configuration
 		# prod file, if it exists
@@ -378,17 +405,24 @@ sub save_file {
 
 	my $q = $self->{q};
 	
-	my $base_doc_url = $q->param ('base_doc_url');
-	my $base_cgi_url = $q->param ('base_cgi_url');
+	my $base_doc_url      = $q->param ('base_doc_url');
+	my $base_cgi_url      = $q->param ('base_cgi_url');
+	my $base_prod_shebang = $q->param ('base_prod_shebang');
 
 	# add a slash if the first character is no slash
 	# (only absoulte URLs are allowed here)
 	$base_doc_url =~ s!^([^/])!/$1!;
 	$base_cgi_url =~ s!^([^/])!/$1!;
 
+	# correct shebang line, if #! is missing
+	$base_prod_shebang = "#!".$base_prod_shebang
+		if $base_prod_shebang ne '' and
+		   $base_prod_shebang !~ m/^#\!/;
+
 	# store the modified parameters back in the CGI object
-	$q->param ('base_doc_url', $base_doc_url);
-	$q->param ('base_cgi_url', $base_cgi_url);
+	$q->param ('base_doc_url',      $base_doc_url);
+	$q->param ('base_cgi_url',      $base_cgi_url);
+	$q->param ('base_prod_shebang', $base_prod_shebang);
 
 	# store project and server URL for the newspirit 
 	# command line tool

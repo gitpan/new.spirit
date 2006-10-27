@@ -1,4 +1,4 @@
-# $Id: Module.pm,v 1.20 2002/08/30 10:11:39 joern Exp $
+# $Id: Module.pm,v 1.22 2005/09/21 09:12:49 joern Exp $
 
 package NewSpirit::CIPP::Module;
 
@@ -36,14 +36,17 @@ sub install_file {
 	my $ok = 1;
 	$self->{install_errors} = {};
 
+	my $trunc_ws = $self->{project_base_config_data}
+			    ->{base_trunc_ws};
+
 	my $CIPP = CIPP::Compile::NewSpirit->new (
 		program_name  	=> $self->{object_name},
 		project 	=> $self->{project},
+		trunc_ws        => $trunc_ws,
 		start_context 	=> 'html',
 		object_type   	=> 'cipp-module',
 		project_root  	=> $self->{project_root_dir},
-		lib_path        => $self->{project_base_config_data}
-				        ->{base_perl_lib_dir},
+		lib_path        => $self->get_runtime_lib_path,
 		url_par_delimiter => $self->{project_base_config_data}
 				        ->{base_url_par_delimiter},
 	);

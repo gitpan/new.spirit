@@ -1,6 +1,6 @@
-#!/usr/dim/perl/bin/perl
+#!/usr/dim/perl/5.8/bin/perl
 
-# $Id: pbrowser.cgi,v 1.26 2001/07/24 15:35:26 joern Exp $
+# $Id: pbrowser.cgi,v 1.27 2004/09/14 09:08:03 joern Exp $
 
 use strict;
 

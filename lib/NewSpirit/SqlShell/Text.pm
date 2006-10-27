@@ -7,6 +7,23 @@ use strict;
 use NewSpirit::SqlShell;
 use Text::Wrap;
 
+sub get_verbose			{ shift->{verbose}			}
+sub set_verbose			{ shift->{verbose}		= $_[1]	}
+
+sub new {
+	my $class = shift;
+	my %par = @_;
+	my ($verbose) = @par{'verbose'};
+
+	$verbose = 1 if not defined $verbose;
+
+	my $self = $class->SUPER::new(@_);
+	
+	$self->set_verbose($verbose);
+	
+	return $self;
+}
+
 sub print_current_command {
 	my $self = shift;
 
@@ -241,11 +258,9 @@ sub print_error {
 
 sub info {
 	my $self = shift;
-	
+	return if not $self->get_verbose;	
 	my @p = @_;
-
 	print STDERR "% ", join ("\n%> ", map { s/\n/\n%> /g; $_ } @p ), "\n";
-	
 	1;
 }
 

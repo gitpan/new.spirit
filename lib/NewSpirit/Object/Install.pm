@@ -118,6 +118,7 @@ sub compile_project_ctrl {
 		my $lib_dir    = $self->{project_lib_dir};
 		my $sql_dir    = $self->{project_sql_dir};
 		my $inc_dir    = $self->{project_inc_dir};
+                my $l10n_dir   = $self->{project_prod_dir}."/l10n";
 		my $cipp_meta_dir = $self->{project_meta_dir}."/##cipp_dep";
 
 		print "$CFG::FONT<b>",
@@ -125,10 +126,10 @@ sub compile_project_ctrl {
 		      "</b>";
 		
 		print "<blockquote>\n";
-		print "$cgi_dir<br>$htdocs_dir<br>$conf_dir<br>$sql_dir<br>$lib_dir<br>$inc_dir<br>$cipp_meta_dir<br>\n";
+		print "$cgi_dir<br>$htdocs_dir<br>$conf_dir<br>$sql_dir<br>$lib_dir<br>$inc_dir<br>$cipp_meta_dir<br>$l10n_dir<br>\n";
 		print "</blockquote></FONT><p>\n";
 
-		rmtree ( [ $cgi_dir, $htdocs_dir, $conf_dir, $sql_dir, $lib_dir, $inc_dir, $cipp_meta_dir ], 0, 0);
+		rmtree ( [ $cgi_dir, $htdocs_dir, $conf_dir, $sql_dir, $lib_dir, $inc_dir, $cipp_meta_dir, $l10n_dir ], 0, 0);
 	}
 
 	if ( $q->param('trunc_depend') == 1 ) {
@@ -145,6 +146,20 @@ sub compile_project_ctrl {
 		# delete modules hash
 		unlink ($self->{project_modules_file});
 	}
+
+        # call cipp-l10n to scan files and create domains.conf
+        # and .pot files
+        print "$CFG::FONT<b>",
+	      "Initializing l10n framework...",
+	      "</b></FONT><p>\n";
+        my $cmd = "cipp-l10n -n -c -d $self->{project_root_dir} && echo SUCCESS";
+        my $output = qx[($cmd) 2>&1];
+        if ( $output !~ /SUCCESS/ ) {
+            print "<font color=red><b>ERROR</b></font><p>\n";
+            print "<p>Command: $cmd</p><p>Output:</p><p>$output</p>\n";
+            NewSpirit::end_page();
+            return;
+        }
 
 	# this is the start folder for get_dependant_object()
 	$self->{__folder_dir} = $self->{project_src_dir};
@@ -218,11 +233,13 @@ sub install_project_ctrl {
 	my $project_root_dir = $default_base_conf->{project_root_dir};
 	my $project_prod_dir = $default_base_conf->{project_prod_dir};
 	my $project_src_dir  = $default_base_conf->{project_src_dir};
+        my $project_l10n_dir = "$default_base_conf->{project_prod_dir}/l10n";
 
 	my $install_root_dir = "$project_root_dir/$install_dir";
 	my $install_prod_dir = "$install_root_dir/prod";
 	my $install_src_dir  = "$install_root_dir/src";
-	my $install_cgi_dir = "$install_root_dir/prod/cgi-bin";
+	my $install_cgi_dir  = "$install_root_dir/prod/cgi-bin";
+        my $install_l10n_dir = "$install_root_dir/prod/l10n";
 
 	# print information text
 
@@ -298,6 +315,15 @@ sub install_project_ctrl {
 		verbose => 1
 	);
 	
+        if ( -d $project_l10n_dir ) {
+	    mkdir ($install_l10n_dir, 0775) if not -d $install_l10n_dir;
+	    NewSpirit::copy_tree (
+		from_dir => $project_l10n_dir,
+		to_dir   => $install_l10n_dir,
+		verbose => 1
+	    );
+	}
+
 	if ( $with_sql_prod_files ) {
 		mkdir ("$install_prod_dir/sql", 0775) if not -d "$install_prod_dir/sql";
 		NewSpirit::copy_tree (

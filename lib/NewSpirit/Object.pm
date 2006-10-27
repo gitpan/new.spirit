@@ -1509,7 +1509,6 @@ sub save_ctrl {
 		print qq{$CFG::FONT Successfully saved to<br><b>$self->{object_file}</b></FONT><p>\n};
 
 		$self->install;
-		$self->execute_save_filter;
 
 		if ( $self->{object_type_config}->{file_upload} ) {
 			print <<__HTML;
@@ -2852,8 +2851,10 @@ sub install {
 				print "<script>self.window.scroll(0,5000000)</script>\n";
 				print "<script>self.window.scroll(0,5000000)</script>\n";
 			}
-
 		}
+
+		$self->execute_save_filter;
+
 	} else {
 		$verbose && $self->print_post_install_message;
 	}
@@ -2898,7 +2899,6 @@ sub install_file {
 	my $self = shift;
 
 	return 2 if $self->is_uptodate;
-	
 	$self->{install_errors} = [];
 
 	my $from_file = $self->{object_file};

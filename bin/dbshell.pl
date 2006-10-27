@@ -1,6 +1,6 @@
-#!/usr/dim/perl/bin/perl
+#!/usr/dim/perl/5.8/bin/perl
 
-# $Id: dbshell.pl,v 1.20 2002/06/07 15:34:14 joern Exp $
+# $Id: dbshell.pl,v 1.22 2004/11/09 13:44:34 joern Exp $
 
 use strict;
 use Getopt::Std;
@@ -33,13 +33,13 @@ BEGIN {
 	}
 }
 
-my $VERSION = "0.11";
+my $VERSION = "0.12";
 my $USAGE;
 
 if ( $STATIC ) {
 	$USAGE =<<__EOF;
 
-dbshell.pl Version $VERSION - Copyright 2001-2002 (c) dimedis GmbH, Cologne, Germany
+dbshell.pl Version $VERSION - Copyright 2001-2004 (c) dimedis GmbH, Cologne, Germany
 
 usage: dbshell.pl [-s] [-e] [-x] [-u username] [-p password] DBI-Data-Source
        dbshell.pl [-s] [-e] [-x] new.spirit-db-config-file

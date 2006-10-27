@@ -470,7 +470,7 @@ sub request {
 		s!\s*\n+!\n!sg;
 		s!^\s+!!mg;
 		s! +! !g;
-		s!^[^<]*?[^=]>!!;
+#		s!^[^<]*?[^=]>!!;
 		s!&lt;!<!g;
 		&$filter_callback() if $filter_callback;
 		$self->client->print($_) if not $silent;
@@ -566,7 +566,7 @@ sub command_install {
 		e               => 'install_last_saved_object',
 		object          => $self->object,
 		filter_callback => sub {
-			s!\[DOWNLOAD\]!!i;
+			s!\s*\[DOWNLOAD.*\]\s*!!i;
 			s!\[Show Perl Source\]!!i;
 		},
 	);
